@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   KeyboardAvoidingView,
   Modal,
@@ -522,9 +523,12 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const buttonOpacity = useRef(new Animated.Value(1)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
   const currentSessionId = useRef(
     sessionId ||
       `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -549,6 +553,42 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     }
   }, [onLoad]);
 
+  // Anima il pulsante quando cambia lo stato di loading
+  useEffect(() => {
+    debugLog("🎬 isLoading changed:", isLoading);
+    animateButtonIcon(isLoading);
+
+    // Se è in loading, aggiungi un pulse continuo
+    if (isLoading) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(buttonScale, {
+            toValue: 1.1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(buttonScale, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      // Inizia il pulse dopo l'animazione iniziale
+      setTimeout(() => {
+        if (isLoading) {
+          // Controlla se è ancora in loading
+          pulseAnimation.start();
+        }
+      }, 500);
+
+      return () => {
+        pulseAnimation.stop();
+      };
+    }
+  }, [isLoading]);
+
   const handleCloseModal = () => {
     setIsModalVisible(false);
     // Pulisce lo storico dei messaggi quando si chiude la chat
@@ -557,6 +597,8 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     setInputText("");
     // Reset dello stato di loading
     setIsLoading(false);
+    // Reset del pulsante scroll to bottom
+    setShowScrollToBottom(false);
     // Annulla eventuali richieste in corso
     if (abortController) {
       abortController.abort();
@@ -573,6 +615,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       abortController.abort();
       setAbortController(null);
       setIsLoading(false);
+      // L'animazione è ora gestita dal useEffect
       debugLog("🛑 Generation stopped by user");
     }
   };
@@ -828,6 +871,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     setMessages((prev) => [...prev, userMessage]);
     setInputText("");
     setIsLoading(true);
+    // L'animazione è ora gestita dal useEffect
 
     // Create AbortController for this request
     const controller = new AbortController();
@@ -930,6 +974,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     } finally {
       setIsLoading(false);
       setAbortController(null);
+      // L'animazione è ora gestita dal useEffect
     }
   };
 
@@ -937,6 +982,57 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
+  };
+
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const isAtBottom =
+      contentOffset.y + layoutMeasurement.height >= contentSize.height - 50;
+    setShowScrollToBottom(!isAtBottom && messages.length > 0);
+  };
+
+  const scrollToBottomPressed = () => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+    setShowScrollToBottom(false);
+  };
+
+  const animateButtonIcon = (toLoading: boolean) => {
+    debugLog("🎬 Starting button animation, toLoading:", toLoading);
+
+    // Reset dei valori prima dell'animazione
+    buttonOpacity.setValue(1);
+    buttonScale.setValue(1);
+
+    Animated.sequence([
+      // Fase 1: Fade out e scale down drastici
+      Animated.parallel([
+        Animated.timing(buttonOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonScale, {
+          toValue: 0.6,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Fase 2: Fade in e scale up
+      Animated.parallel([
+        Animated.timing(buttonOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonScale, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      debugLog("🎬 Button animation completed");
+    });
   };
 
   useEffect(() => {
@@ -1108,6 +1204,8 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                 ref={scrollViewRef}
                 style={styles.messagesContainer}
                 showsVerticalScrollIndicator={false}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
               >
                 {messages.map(renderMessage)}
                 {isLoading && (
@@ -1116,6 +1214,21 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                 {/* Spacer per permettere scroll completo */}
                 <View style={styles.scrollSpacer} />
               </ScrollView>
+
+              {/* Scroll to Bottom Button */}
+              {showScrollToBottom && (
+                <TouchableOpacity
+                  style={styles.scrollToBottomButton}
+                  onPress={scrollToBottomPressed}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons
+                    name="chevron-down"
+                    size={24}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              )}
 
               {/* Input */}
               <View style={[styles.inputContainer, inputContainerStyle]}>
@@ -1136,19 +1249,31 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                     !inputText.trim() &&
                       !isLoading &&
                       styles.sendButtonDisabled,
+                    isLoading && styles.sendButtonLoading, // Nuovo stile per loading
                   ]}
                   onPress={isLoading ? handleStopGeneration : handleSendMessage}
                   disabled={!inputText.trim() && !isLoading}
                 >
-                  {isLoading ? (
-                    <LoadingDots />
-                  ) : (
-                    <MaterialCommunityIcons
-                      name="send"
-                      size={20}
-                      color="white"
-                    />
-                  )}
+                  <Animated.View
+                    style={{
+                      opacity: buttonOpacity,
+                      transform: [{ scale: buttonScale }],
+                    }}
+                  >
+                    {isLoading ? (
+                      <MaterialCommunityIcons
+                        name="stop"
+                        size={20}
+                        color="white"
+                      />
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="send"
+                        size={20}
+                        color="white"
+                      />
+                    )}
+                  </Animated.View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1328,6 +1453,9 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: "#e9ecef",
   },
+  sendButtonLoading: {
+    backgroundColor: "#4a4a4a", // Dark gray instead of red
+  },
   triggerButtonContent: {
     flexDirection: "row",
     alignItems: "center",
@@ -1428,6 +1556,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginHorizontal: 1,
     lineHeight: 16,
+  },
+  scrollToBottomButton: {
+    position: "absolute",
+    bottom: 90, // Sopra l'input container (che ha circa 80px di altezza)
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#ffffff",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.08)",
   },
 });
 
