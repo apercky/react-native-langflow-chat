@@ -72,7 +72,6 @@
       "node"
     ]
   },
-  "react-native": "src/index.tsx",
   "publishConfig": {
     "access": "public"
   },
