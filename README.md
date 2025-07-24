@@ -1,425 +1,349 @@
-# react-native-langflow-chat
+# React Native LangFlow Chat Widget
 
-A React Native component for integrating LangFlow chat widget using WebView with cross-platform support for Electron and iOS applications.
+A **native React Native component** for integrating LangFlow chat functionality with cross-platform support for iOS, Android, and Expo applications.
 
-[![npm version](https://badge.fury.io/js/react-native-langflow-chat.svg)](https://badge.fury.io/js/react-native-langflow-chat)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## ✨ Key Features
 
-## Features
+- 🚀 **100% Native React Native** - No WebView dependencies, pure native components
+- 📱 **Modal Overlay System** - Chat opens above all content with proper z-index handling
+- 🎨 **Fully Customizable** - All styles and components can be customized
+- 🔧 **Custom Trigger Button** - Support for custom icon components
+- 🌐 **Direct LangFlow API Integration** - Native fetch-based communication
+- ⌨️ **Keyboard Handling** - Proper keyboard avoidance and input management
+- 💬 **Message History** - Persistent conversation within session
+- ⚡ **Loading States** - Visual feedback during API calls
+- 📍 **9 Position Options** - Flexible button positioning
+- 🎯 **TypeScript Support** - Full type safety and IntelliSense
 
-- 🚀 **Cross-platform**: Works on React Native, Electron, and iOS with the same codebase
-- 🎨 **Highly Customizable**: Full control over styling and behavior
-- 🔒 **Secure**: Built-in security features and API key support
-- 📱 **Mobile Optimized**: Responsive design optimized for mobile devices
-- 🔄 **Event Handling**: Comprehensive event system for message handling
-- 📦 **TypeScript**: Full TypeScript support with comprehensive type definitions
+## 🆚 Comparison with Original
 
-## Installation
+| Feature | Original (WebView) | This Package (Native) |
+|---------|-------------------|----------------------|
+| **Performance** | Heavy WebView | ⚡ Lightweight native |
+| **Positioning** | Z-index issues | ✅ Perfect modal overlay |
+| **Customization** | Limited CSS | 🎨 Full React Native styling |
+| **Keyboard** | WebView limitations | ⌨️ Native keyboard handling |
+| **Dependencies** | WebView + CDN | 📦 Zero external deps |
+| **Bundle Size** | Large | 🪶 Minimal footprint |
+| **Offline** | Requires CDN | ✅ Works offline |
+
+## 📦 Installation
 
 ```bash
-# Install the package and required peer dependency
-npm install react-native-langflow-chat react-native-webview
+npm install react-native-langflow-chat @expo/vector-icons
 # or
-yarn add react-native-langflow-chat react-native-webview
+yarn add react-native-langflow-chat @expo/vector-icons
 ```
 
-**Note**: `react-native-webview` is a peer dependency, so you must install it separately. This ensures compatibility with your existing WebView version and prevents conflicts.
+## 🚀 Quick Start
 
-### Platform Setup
+### Basic Usage
 
-#### iOS
-
-```bash
-cd ios && pod install
-```
-
-#### Android
-
-No additional setup required for React Native 0.60+.
-
-## Quick Start
-
-```javascript
+```jsx
 import React from 'react';
 import { View } from 'react-native';
-import { LangFlowChatWidget } from 'react-native-langflow-chat';
+import LangFlowChatWidget from 'react-native-langflow-chat';
 
 const App = () => {
   return (
     <View style={{ flex: 1 }}>
+      {/* Your app content */}
+      
       <LangFlowChatWidget
         flowId="your-flow-id"
-        hostUrl="https://your-langflow-server.com"
+        hostUrl="https://your-langflow-host.com"
         apiKey="your-api-key"
       />
     </View>
   );
 };
+
+export default App;
 ```
 
-## Props
+### Advanced Configuration
+
+```jsx
+import LangFlowChatWidget from 'react-native-langflow-chat';
+
+const CustomChatIcon = () => (
+  <View style={{ width: 60, height: 60, backgroundColor: '#FF6B6B', borderRadius: 30, justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ fontSize: 28 }}>🤖</Text>
+  </View>
+);
+
+<LangFlowChatWidget
+  // Required
+  flowId="dcbed533-859f-4b99-b1f5-16fce884f28f"
+  hostUrl="https://your-langflow-server.com"
+  apiKey="sk-your-api-key"
+  
+  // Customization
+  windowTitle="AI Assistant"
+  placeholder="Ask me anything..."
+  placeholderSending="AI is thinking..."
+  
+  // Positioning & Size
+  chatPosition="bottom-right"
+  height={600}
+  width={350}
+  
+  // Custom Trigger
+  triggerComponent={<CustomChatIcon />}
+  
+  // Styling
+  chatWindowStyle={{
+    borderRadius: 16,
+    shadowOpacity: 0.4,
+  }}
+  botMessageStyle={{
+    backgroundColor: "#f0f8ff",
+    borderRadius: 16,
+  }}
+  userMessageStyle={{
+    backgroundColor: "#007AFF",
+    borderRadius: 16,
+  }}
+  
+  // Event Handlers
+  onMessage={(message) => console.log('Message:', message)}
+  onError={(error) => console.error('Error:', error)}
+  onLoad={() => console.log('Widget loaded')}
+/>
+```
+
+### Localization
+
+The component supports full localization with customizable text strings:
+
+```jsx
+<LangFlowChatWidget
+  flowId="your-flow-id"
+  hostUrl="https://your-host.com"
+  // Italian localization
+  windowTitle="Chat Assistente"
+  placeholder="Scrivi il tuo messaggio..."
+  placeholderSending="Invio in corso..."
+  loadingText="Sto scrivendo..."
+  errorMessage="Si è verificato un errore. Riprova."
+  fallbackMessage="Ho ricevuto il tuo messaggio ma non riesco a generare una risposta."
+  sourceTooltipTitle="Fonte"
+  pageText="Pagina"
+  ofText="di"
+  closeButtonAriaLabel="Chiudi"
+/>
+```
+
+#### Available Localization Props
+
+| Prop | Default (English) | Description |
+|------|------------------|-------------|
+| `windowTitle` | "Chat" | Modal header title |
+| `placeholder` | "Type your message..." | Input placeholder |
+| `placeholderSending` | "Sending..." | Input placeholder while sending |
+| `loadingText` | "Typing..." | Loading indicator text |
+| `errorMessage` | "Sorry, there was an error..." | Error message text |
+| `fallbackMessage` | "I received your message but..." | Fallback response text |
+| `sourceTooltipTitle` | "Source" | Citation tooltip title |
+| `pageText` | "Page" | Citation page text |
+| `ofText` | "of" | Citation "of" text |
+| `closeButtonAriaLabel` | "Close" | Close button accessibility label |
+
+## 📋 Complete Props Reference
 
 ### Required Props
 
 | Prop | Type | Description |
 |------|------|-------------|
 | `flowId` | `string` | Your LangFlow flow identifier |
-| `hostUrl` | `string` | Your LangFlow server URL (must be HTTPS) |
+| `hostUrl` | `string` | Your LangFlow server URL (e.g., "https://your-server.com") |
 
-### Optional Props
+### Authentication & Configuration
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `apiKey` | `string` | - | LangFlow API key for authentication |
-| `windowTitle` | `string` | - | Title for the chat window |
-| `chatPosition` | `ChatPosition` | `'bottom-right'` | Position of chat widget |
-| `height` | `number` | - | Chat window height in pixels |
-| `width` | `number` | - | Chat window width in pixels |
-| `online` | `boolean` | - | Online status indicator |
-| `startOpen` | `boolean` | - | Whether chat starts open |
-| `placeholder` | `string` | - | Input placeholder text |
-| `placeholderSending` | `string` | - | Placeholder while sending |
-| `onlineMessage` | `string` | - | Message shown when online |
-| `sessionId` | `string` | - | Custom session identifier |
+| `apiKey` | `string` | `undefined` | LangFlow API key for authentication |
+| `sessionId` | `string` | auto-generated | Custom session ID for conversation continuity |
+| `additionalHeaders` | `Record<string, any>` | `{}` | Additional HTTP headers for API requests |
 
-### Styling Props
+### Chat Configuration
 
-All styling props accept JSON objects for customization:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `chatInputs` | `Record<string, any>` | `undefined` | Additional inputs to send with each message |
+| `chatInputField` | `string` | `undefined` | Specific input field name for chat |
+| `tweaks` | `Record<string, any>` | `undefined` | LangFlow tweaks/parameters |
+| `inputType` | `string` | `"chat"` | Input type for LangFlow API |
+| `outputType` | `string` | `"chat"` | Output type for LangFlow API |
+| `outputComponent` | `string` | `undefined` | Specific output component name |
 
-| Prop | Description |
-|------|-------------|
-| `botMessageStyle` | Bot message bubble styling |
-| `userMessageStyle` | User message bubble styling |
-| `chatWindowStyle` | Overall chat window styling |
-| `chatTriggerStyle` | Chat trigger button styling |
-| `inputStyle` | Input field styling |
-| `sendButtonStyle` | Send button styling |
-| `errorMessageStyle` | Error message styling |
-| `inputContainerStyle` | Input container styling |
-| `sendIconStyle` | Send icon styling |
+### UI Content & Localization
 
-### Event Handlers
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `windowTitle` | `string` | `"Chat"` | Title displayed in chat header |
+| `placeholder` | `string` | `"Type your message..."` | Input field placeholder text |
+| `placeholderSending` | `string` | `"Sending..."` | Placeholder text while sending message |
+| `loadingText` | `string` | `"Typing..."` | Text shown during bot response loading |
+| `errorMessage` | `string` | `"Sorry, there was an error..."` | Default error message text |
+| `fallbackMessage` | `string` | `"I received your message but..."` | Fallback message when no response |
+| `sourceTooltipTitle` | `string` | `"Source"` | Title for citation source tooltips |
+| `pageText` | `string` | `"Page"` | Text for page numbers in citations |
+| `ofText` | `string` | `"of"` | Text for "X of Y" in citations |
+| `closeButtonAriaLabel` | `string` | `"Close"` | Accessibility label for close button |
+
+### Layout & Behavior
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `chatPosition` | `ChatPosition` | `"bottom-right"` | Trigger button position (see positions below) |
+| `height` | `number` | `screenHeight * 0.9` | Chat modal height in pixels |
+| `width` | `number` | `screenWidth * 0.9` | Chat modal width in pixels |
+| `startOpen` | `boolean` | `false` | Whether to start with chat modal open |
+
+### Custom Trigger Button
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `triggerComponent` | `React.ReactNode` | `undefined` | Custom component to replace default trigger button |
+| `triggerButtonStyle` | `ViewStyle` | default styles | Style overrides for trigger button container |
+
+### Message Styling
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `onMessage` | `(message: LangFlowMessage) => void` | Called when messages are sent/received |
-| `onError` | `(error: LangFlowError) => void` | Called when errors occur |
-| `onLoad` | `() => void` | Called when widget loads successfully |
+| `botMessageStyle` | `ViewStyle & TextStyle` | Styling for bot message bubbles and text |
+| `userMessageStyle` | `ViewStyle & TextStyle` | Styling for user message bubbles and text |
+| `errorMessageStyle` | `ViewStyle & TextStyle` | Styling for error message bubbles and text |
 
-## Usage Examples
+### UI Component Styling
 
-### Basic Implementation
+| Prop | Type | Description |
+|------|------|-------------|
+| `chatWindowStyle` | `ViewStyle` | Styling for the main chat modal container |
+| `inputContainerStyle` | `ViewStyle` | Styling for the input area container |
+| `inputStyle` | `ViewStyle & TextStyle` | Styling for the text input field |
+| `sendButtonStyle` | `ViewStyle & TextStyle` | Styling for the send message button |
+| `citationBubbleColor` | `string` | Background color for citation number bubbles (default: "#4a4a4a") |
 
-```javascript
-import React from 'react';
-import { View } from 'react-native';
-import { LangFlowChatWidget } from 'react-native-langflow-chat';
+### Event Callbacks
 
-const ChatScreen = () => {
-  const handleMessage = (message) => {
-    console.log('New message:', message);
-  };
+| Prop | Type | Description |
+|------|------|-------------|
+| `onMessage` | `(message: LangFlowMessage) => void` | Called when messages are sent or received |
+| `onError` | `(error: LangFlowError) => void` | Called when API or other errors occur |
+| `onLoad` | `() => void` | Called when the widget finishes loading |
 
-  const handleError = (error) => {
-    console.error('Chat error:', error);
-  };
+### Chat Positions
 
-  return (
-    <View style={{ flex: 1 }}>
-      <LangFlowChatWidget
-        flowId="your-flow-id"
-        hostUrl="https://your-langflow-server.com"
-        apiKey="your-api-key"
-        windowTitle="AI Assistant"
-        onMessage={handleMessage}
-        onError={handleError}
-        onLoad={() => console.log('Chat loaded!')}
-      />
-    </View>
-  );
-};
+The `chatPosition` prop accepts one of these 9 values:
+
+```
+"top-left"      "top-center"      "top-right"
+"center-left"                     "center-right"  
+"bottom-left"   "bottom-center"   "bottom-right"
 ```
 
-### Customized Styling
-
-```javascript
-import { LangFlowChatWidget } from 'react-native-langflow-chat';
-
-const CustomizedChat = () => {
-  return (
-    <LangFlowChatWidget
-      flowId="your-flow-id"
-      hostUrl="https://your-server.com"
-      botMessageStyle={{
-        backgroundColor: "#f3f4f6",
-        color: "#374151",
-        borderRadius: "16px 16px 16px 4px",
-        padding: "12px 16px",
-        marginBottom: "8px"
-      }}
-      userMessageStyle={{
-        backgroundColor: "#3b82f6",
-        color: "#ffffff",
-        borderRadius: "16px 16px 4px 16px",
-        padding: "12px 16px",
-        marginBottom: "8px"
-      }}
-      chatWindowStyle={{
-        backgroundColor: "#ffffff",
-        borderRadius: "12px",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)"
-      }}
-      inputStyle={{
-        borderRadius: "24px",
-        border: "1px solid #d1d5db",
-        padding: "12px 16px",
-        fontSize: "16px"
-      }}
-    />
-  );
-};
-```
-
-### Floating Chat Widget
-
-```javascript
-const FloatingChat = () => {
-  return (
-    <LangFlowChatWidget
-      flowId="your-flow-id"
-      hostUrl="https://your-server.com"
-      chatPosition="bottom-right"
-      height={500}
-      width={350}
-      startOpen={false}
-      chatTriggerStyle={{
-        backgroundColor: "#3b82f6",
-        borderRadius: "50%",
-        width: "60px",
-        height: "60px",
-        boxShadow: "0 4px 12px rgba(59, 130, 246, 0.4)"
-      }}
-    />
-  );
-};
-```
-
-### With Session Management
-
-```javascript
-const SessionManagedChat = () => {
-  const userId = 'user123';
-  
-  return (
-    <LangFlowChatWidget
-      flowId="your-flow-id"
-      hostUrl="https://your-server.com"
-      sessionId={`user_${userId}_${Date.now()}`}
-      additionalHeaders={{
-        'X-User-ID': userId,
-        'X-App-Version': '1.0.0'
-      }}
-      chatInputs={{
-        user_name: 'John Doe',
-        context: 'mobile_app'
-      }}
-    />
-  );
-};
-```
-
-## Types
-
-The package exports the following TypeScript types:
-
-```typescript
-import type { 
-  LangFlowChatWidgetProps,
-  LangFlowMessage,
-  LangFlowError,
-  ChatPosition 
-} from 'react-native-langflow-chat';
-```
-
-### LangFlowMessage
+### Type Definitions
 
 ```typescript
 interface LangFlowMessage {
-  type: 'user_message' | 'bot_message' | 'system' | 'error';
+  type: "user_message" | "bot_message" | "system" | "error";
   text: string;
   timestamp?: number;
   metadata?: Record<string, any>;
 }
-```
 
-### LangFlowError
-
-```typescript
 interface LangFlowError {
   message: string;
   code?: string;
   details?: any;
 }
-```
 
-### ChatPosition
-
-```typescript
 type ChatPosition = 
-  | 'top-left' 
-  | 'top-center' 
-  | 'top-right' 
-  | 'center-left' 
-  | 'center-right' 
-  | 'bottom-right' 
-  | 'bottom-center' 
-  | 'bottom-left';
+  | "top-left" | "top-center" | "top-right"
+  | "center-left" | "center-right" 
+  | "bottom-left" | "bottom-center" | "bottom-right";
 ```
 
-## Requirements
+## 🧪 Try it Out
 
-- React Native >= 0.60.0
-- react-native-webview >= 11.0.0
-- React >= 16.8.0
-
-## Cross-Platform Support
-
-This component is designed to work seamlessly across:
-
-- **React Native**: iOS and Android apps
-- **Electron**: Desktop applications using React Native Web
-- **Web**: Web applications (with react-native-web)
-
-## Security Considerations
-
-- Always use HTTPS for your `hostUrl`
-- Keep your API keys secure and never commit them to version control
-- Use environment variables for sensitive configuration
-- Implement proper session management for production applications
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Development
-
-### Setup Development Environment
+We've included a complete Expo example project:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/react-native-langflow-chat.git
-cd react-native-langflow-chat
-
-# Install dependencies
+cd example
 npm install
-
-# Build the package
-npm run build
-
-# Watch for changes during development
-npm run build:watch
-
-# Run linting
-npm run lint
-
-# Fix linting issues
-npm run lint:fix
+npm start
 ```
 
-### Testing Locally
+Update the `flowId`, `hostUrl`, and `apiKey` in `example/App.tsx` with your LangFlow configuration.
 
-To test the package locally before publishing:
+## 🔧 LangFlow Setup
 
-```bash
-# In the package directory
-npm pack
+To use this component, you need:
 
-# In your test project
-npm install /path/to/react-native-langflow-chat-1.0.0.tgz
+1. **A running LangFlow server** (local or hosted)
+2. **A published flow** with Chat Input and Chat Output components
+3. **API key** (if your server requires authentication)
+
+### API Endpoint
+
+The component communicates with LangFlow using the standard REST API:
+
+```
+POST /api/v1/run/{flow_id}
+Headers: {
+  "Content-Type": "application/json",
+  "x-api-key": "your-api-key"
+}
+Body: {
+  "input_value": "user message",
+  "output_type": "chat",
+  "input_type": "chat",
+  "session_id": "session_id"
+}
 ```
 
-Or use npm link:
-
-```bash
-# In the package directory
-npm link
-
-# In your test project
-npm link react-native-langflow-chat
-```
-
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-#### WebView not loading
+1. **Connection Error**
+   - Verify `hostUrl` is correct and reachable
+   - Ensure LangFlow server is running
+   - Use HTTPS in production
 
-- Ensure your `hostUrl` uses HTTPS protocol
-- Check that your LangFlow server is accessible
-- Verify your `flowId` is correct
+2. **Flow Not Found**
+   - Check `flowId` is correct
+   - Ensure flow is published and active
 
-#### TypeScript errors
-
-- Make sure you have `@types/react` and `@types/react-native` installed
-- Update to the latest version of the package
-
-#### Styling not applying
-
-- Verify JSON objects are properly formatted
-- Check console for JavaScript errors in WebView
-- Ensure CSS properties are valid web CSS
-
-#### Cross-platform issues
-
-- Test on both iOS and Android devices
-- Verify react-native-webview is properly installed
-- Check platform-specific WebView properties
+3. **Authentication Error**
+   - Verify `apiKey` is valid
+   - Check server authentication settings
 
 ### Debug Mode
 
-Enable debug mode by adding console logging:
+Enable debugging by monitoring console logs for:
+- API requests and responses
+- Error messages
+- Widget state changes
 
-```javascript
-<LangFlowChatWidget
-  // ... other props
-  onMessage={(message) => {
-    console.log('Debug - Message received:', message);
-  }}
-  onError={(error) => {
-    console.log('Debug - Error occurred:', error);
-  }}
-  onLoad={() => {
-    console.log('Debug - Widget loaded successfully');
-  }}
-/>
-```
+## 📱 Platform Support
 
-## Changelog
+- ✅ **iOS** - Native iOS components
+- ✅ **Android** - Native Android components  
+- ✅ **Expo** - Full Expo compatibility
+- ✅ **React Native CLI** - Standard RN projects
 
-### v1.0.0
+## 🤝 Contributing
 
-- Initial release
-- Full TypeScript support
-- Cross-platform compatibility
-- Comprehensive styling options
-- Event handling system
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+## 📄 License
 
 MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🙏 Acknowledgments
 
-- 📖 [Documentation](https://github.com/yourusername/react-native-langflow-chat#readme)
-- 🐛 [Report Issues](https://github.com/yourusername/react-native-langflow-chat/issues)
-- 💬 [Discussions](https://github.com/yourusername/react-native-langflow-chat/discussions)
-
-## Related Projects
-
-- [LangFlow](https://github.com/langflow-ai/langflow) - The original LangFlow project
-- [LangFlow Embedded Chat](https://github.com/langflow-ai/langflow-embedded-chat) - Web component this package wraps
-- [React Native WebView](https://github.com/react-native-webview/react-native-webview) - WebView component used internally
+- [LangFlow](https://github.com/langflow-ai/langflow) - The amazing visual LLM framework
+- [LangFlow Embedded Chat](https://github.com/langflow-ai/langflow-embedded-chat) - Original web component inspiration

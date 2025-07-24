@@ -78,5 +78,10 @@
   "resolutions": {
     "@types/react": "^18.0.0",
     "@types/react-native": "^0.70.0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-native": "^0.74.5",
+    "@expo/vector-icons": "^14.0.0"
   }
 }
