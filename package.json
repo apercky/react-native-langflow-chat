@@ -1,7 +1,7 @@
 {
   "name": "react-native-langflow-chat",
-  "version": "1.0.4",
-  "description": "A native React Native component for integrating LangFlow chat with streaming support, citation bubbles, and customizable UI",
+  "version": "1.0.6",
+  "description": "A native React Native component for integrating LangFlow chat with streaming support, citation bubbles, react-native-marked rendering, and customizable UI",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
@@ -42,9 +42,11 @@
   },
   "homepage": "https://github.com/apercky/react-native-langflow-chat#readme",
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-native": ">=0.70.0",
-    "@expo/vector-icons": ">=13.0.0"
+    "react": ">=16.8.0",
+    "react-native": ">=0.60.0",
+    "@expo/vector-icons": ">=13.0.0",
+    "react-native-marked": ">=7.0.0",
+    "react-native-svg": ">=13.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.0",

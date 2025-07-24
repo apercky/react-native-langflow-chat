@@ -16,6 +16,17 @@ import {
   ViewStyle,
 } from "react-native";
 
+// Optional markdown support - only import if available
+let ReactNativeMarked: any = null;
+let useMarkdown: any = null;
+try {
+  const marked = require("react-native-marked");
+  ReactNativeMarked = marked.default;
+  useMarkdown = marked.useMarkdown;
+} catch (error) {
+  // react-native-marked not available, will use plain text
+}
+
 // Types
 export interface LangFlowMessage {
   type: "user_message" | "bot_message" | "system" | "error";
@@ -77,6 +88,7 @@ export interface LangFlowChatWidgetProps {
   online?: boolean;
   startOpen?: boolean;
   debugEnabled?: boolean;
+  enableMarkdown?: boolean;
 
   // Styling props - converted to React Native styles
   botMessageStyle?: ViewStyle & TextStyle;
@@ -203,6 +215,7 @@ const MessageWithCitations: React.FC<{
   pageText: string;
   ofText: string;
   citationBubbleColor: string;
+  enableMarkdown: boolean;
 }> = ({
   text,
   messageStyle,
@@ -210,11 +223,123 @@ const MessageWithCitations: React.FC<{
   pageText,
   ofText,
   citationBubbleColor,
+  enableMarkdown,
 }) => {
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(
     null
   );
   const parsedMessage = parseMessageWithCitations(text);
+
+  // Componente per renderizzare markdown in React Native
+  const MarkdownRenderer: React.FC<{ content: string; style: any }> = ({
+    content,
+    style,
+  }) => {
+    if (!enableMarkdown || !ReactNativeMarked) {
+      return <Text style={style}>{content}</Text>;
+    }
+
+    try {
+      // Usa useMarkdown hook invece del componente per evitare VirtualizedLists nested
+      const elements = useMarkdown
+        ? useMarkdown(content, {
+            styles: {
+              heading1: {
+                fontSize: 24,
+                fontWeight: "bold",
+                marginVertical: 4,
+                color: style.color || "#000",
+              },
+              heading2: {
+                fontSize: 20,
+                fontWeight: "bold",
+                marginVertical: 3,
+                color: style.color || "#000",
+              },
+              heading3: {
+                fontSize: 18,
+                fontWeight: "bold",
+                marginVertical: 2,
+                color: style.color || "#000",
+              },
+              paragraph: {
+                ...style,
+                marginVertical: 2,
+              },
+              strong: {
+                ...style,
+                fontWeight: "bold",
+              },
+              em: {
+                ...style,
+                fontStyle: "italic",
+              },
+              codespan: {
+                ...style,
+                fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                backgroundColor: "rgba(0,0,0,0.1)",
+                paddingHorizontal: 4,
+                paddingVertical: 2,
+                borderRadius: 4,
+              },
+              code: {
+                ...style,
+                fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                backgroundColor: "rgba(0,0,0,0.1)",
+                padding: 8,
+                borderRadius: 6,
+                marginVertical: 4,
+              },
+              listItem: {
+                ...style,
+                marginVertical: 1,
+              },
+              link: {
+                ...style,
+                color: "#007AFF",
+                textDecorationLine: "underline",
+              },
+              blockquote: {
+                ...style,
+                fontStyle: "italic",
+                borderLeftWidth: 3,
+                borderLeftColor: "#ccc",
+                paddingLeft: 8,
+                marginVertical: 4,
+                backgroundColor: "rgba(0,0,0,0.05)",
+                paddingVertical: 4,
+              },
+            },
+          })
+        : null;
+
+      if (elements && elements.length > 0) {
+        return (
+          <View
+            style={{
+              width: "100%",
+              flexShrink: 1,
+            }}
+          >
+            {elements.map((element: React.ReactNode, index: number) => (
+              <View
+                key={`markdown-${index}`}
+                style={{
+                  width: "100%",
+                }}
+              >
+                {element}
+              </View>
+            ))}
+          </View>
+        );
+      }
+    } catch (error) {
+      // Fallback to plain text if markdown rendering fails
+    }
+
+    return <Text style={style}>{content}</Text>;
+  };
 
   // Dividiamo il testo in parti e citazioni
   const renderTextWithCitations = () => {
@@ -230,9 +355,11 @@ const MessageWithCitations: React.FC<{
         // Aggiungiamo il testo prima della citazione
         if (splitIndex > 0) {
           parts.push(
-            <Text key={`text-${keyCounter++}`} style={messageStyle}>
-              {currentText.substring(0, splitIndex)}
-            </Text>
+            <MarkdownRenderer
+              key={`text-${keyCounter++}`}
+              content={currentText.substring(0, splitIndex)}
+              style={messageStyle}
+            />
           );
         }
 
@@ -254,9 +381,11 @@ const MessageWithCitations: React.FC<{
     // Aggiungiamo il testo rimanente
     if (currentText) {
       parts.push(
-        <Text key={`text-final`} style={messageStyle}>
-          {currentText}
-        </Text>
+        <MarkdownRenderer
+          key={`text-final`}
+          content={currentText}
+          style={messageStyle}
+        />
       );
     }
 
@@ -371,6 +500,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   width,
   startOpen = false,
   debugEnabled = false,
+  enableMarkdown = true,
   botMessageStyle,
   chatWindowStyle,
   errorMessageStyle,
@@ -867,14 +997,21 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
               : { ...styles.botMessageBubble, ...botMessageStyle },
           ]}
         >
-          <MessageWithCitations
-            text={message.text}
-            messageStyle={messageStyle}
-            sourceTooltipTitle={sourceTooltipTitle}
-            pageText={pageText}
-            ofText={ofText}
-            citationBubbleColor={citationBubbleColor}
-          />
+          {isUser ? (
+            // Per i messaggi utente, usa solo testo normale senza markdown
+            <Text style={messageStyle}>{message.text}</Text>
+          ) : (
+            // Per i messaggi bot ed errori, usa il componente con citazioni e markdown
+            <MessageWithCitations
+              text={message.text}
+              messageStyle={messageStyle}
+              sourceTooltipTitle={sourceTooltipTitle}
+              pageText={pageText}
+              ofText={ofText}
+              citationBubbleColor={citationBubbleColor}
+              enableMarkdown={enableMarkdown && !isError} // Disabilita markdown per errori
+            />
+          )}
         </View>
       </View>
     );

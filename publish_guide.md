@@ -6,7 +6,7 @@ This guide will help you create and publish your npm package step by step.
 
 Create the following directory structure:
 
-```
+```txt
 react-native-langflow-chat/
 ├── src/
 │   ├── index.tsx
@@ -35,6 +35,7 @@ npm init -y
 ## Step 2: Copy the Files
 
 Copy all the files from the artifacts:
+
 - `package.json` (replace the generated one)
 - `tsconfig.json`
 - `.eslintrc.js`
@@ -175,6 +176,7 @@ npm install /path/to/react-native-langflow-chat
 ```
 
 Test App.js:
+
 ```javascript
 import React from 'react';
 import { View } from 'react-native';
@@ -265,11 +267,13 @@ cd ios && pod install
 ```
 
 **Important**: `react-native-webview` is a **peer dependency**, which means:
+
 - ✅ **Correct**: It's listed in `peerDependencies` so users must install it themselves
 - ✅ **Why**: This prevents version conflicts and reduces bundle size
 - ✅ **User Control**: Users can choose their preferred version of react-native-webview
 
 Usage (JavaScript):
+
 ```javascript
 import React from 'react';
 import { View } from 'react-native';
@@ -342,7 +346,7 @@ git push origin main --tags
 
 ## Troubleshooting
 
-### Common Issues:
+### Common Issues
 
 1. **Package name already exists**: Choose a different name or use scoped package
 2. **TypeScript errors**: Ensure all types are properly defined
@@ -350,7 +354,7 @@ git push origin main --tags
 4. **Import errors**: Verify export statements in src/index.tsx
 5. **WebView issues**: Ensure react-native-webview is listed as peer dependency
 
-### Debug Publishing:
+### Debug Publishing
 
 ```bash
 # Check what files will be included
@@ -366,6 +370,7 @@ npm ls react-native-langflow-chat
 ## Alternative Package Names
 
 If `react-native-langflow-chat` is taken, consider:
+
 - `@yourusername/react-native-langflow-chat`
 - `react-native-langflow-widget`
 - `rn-langflow-chat`

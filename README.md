@@ -27,13 +27,21 @@ A **native React Native component** for integrating LangFlow chat functionality 
 | **Bundle Size** | Large | 🪶 Minimal footprint |
 | **Offline** | Requires CDN | ✅ Works offline |
 
-## 📦 Installation
+## 🚀 Installation
 
 ```bash
-npm install react-native-langflow-chat @expo/vector-icons
+npm install react-native-langflow-chat @expo/vector-icons react-native-marked react-native-svg
 # or
-yarn add react-native-langflow-chat @expo/vector-icons
+yarn add react-native-langflow-chat @expo/vector-icons react-native-marked react-native-svg
 ```
+
+### Required Dependencies
+
+- **`@expo/vector-icons`**: For UI icons (chat button, close button, etc.)
+- **`react-native-marked`**: For markdown rendering in bot messages
+- **`react-native-svg`**: Required by react-native-marked for SVG elements
+
+> **Note**: All dependencies are required for the widget to function properly.
 
 ## 🚀 Quick Start
 
@@ -104,6 +112,12 @@ const CustomChatIcon = () => (
     backgroundColor: "#007AFF",
     borderRadius: 16,
   }}
+  
+  // Development debugging
+  debugEnabled={__DEV__} // Enable logs in development only
+  
+  // Markdown rendering
+  enableMarkdown={true} // Enable markdown for bot messages
   
   // Event Handlers
   onMessage={(message) => console.log('Message:', message)}
@@ -202,6 +216,7 @@ The component supports full localization with customizable text strings:
 | `width` | `number` | `screenWidth * 0.9` | Chat modal width in pixels |
 | `startOpen` | `boolean` | `false` | Whether to start with chat modal open |
 | `debugEnabled` | `boolean` | `false` | Enable debug console logs for development |
+| `enableMarkdown` | `boolean` | `true` | Enable markdown rendering for bot messages |
 
 ### Custom Trigger Button
 
@@ -370,7 +385,71 @@ If you encounter Metro bundler errors after installing this package, it's usuall
 - **`Cannot find module 'metro/src/ModuleGraph/worker/importLocationsPlugin'`**: This indicates a Metro version conflict. Clear caches and reinstall dependencies.
 - **`@expo/vector-icons not found`**: Install the required peer dependency with `npx expo install @expo/vector-icons`
 
-For more detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
+  For more detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
+
+## 📝 Markdown Support
+
+The widget has **built-in markdown rendering** for bot messages using [react-native-marked](https://www.npmjs.com/package/react-native-marked), making responses more readable and well-formatted.
+
+### Features
+
+- ✅ **Headings** (H1, H2, H3)
+- ✅ **Bold** and *italic* text
+- ✅ `Inline code` and code blocks
+- ✅ Lists (bulleted and numbered)
+- ✅ Links (displayed with underline)
+- ✅ Blockquotes
+- ✅ **Native React Native rendering** - optimized for mobile
+- ✅ **Built-in support** - no additional configuration needed
+
+### Usage
+
+Markdown rendering is enabled by default:
+
+```jsx
+<LangFlowChatWidget
+  flowId="your-flow-id"
+  hostUrl="https://your-langflow-host.com"
+  enableMarkdown={true} // Default: true
+/>
+```
+
+### Disable Markdown
+
+If you prefer plain text rendering:
+
+```jsx
+<LangFlowChatWidget
+  enableMarkdown={false} // Disable markdown rendering
+/>
+```
+
+## 🔧 Troubleshooting
+
+### Metro bundler errors with react-markdown
+
+If you encounter Metro bundler errors like:
+```
+Metro has encountered an error: While trying to resolve module `devlop` from file...
+```
+
+This is because `react-markdown` is designed for web and has dependencies incompatible with React Native. **Solution**: Use `react-native-marked` instead:
+
+```bash
+# Remove react-markdown
+npm uninstall react-markdown
+
+# Install react-native-marked
+npm install react-native-marked react-native-svg
+```
+
+The widget automatically detects and uses `react-native-marked` when available.
+
+### Other common issues
+
+1. **Missing react-native-svg**: Install it with `npm install react-native-svg`
+2. **iOS build issues**: Run `cd ios && pod install` after installing dependencies
+3. **Android build issues**: Clean and rebuild with `cd android && ./gradlew clean`
 
 ## 🤝 Contributing
 
@@ -384,3 +463,67 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - [LangFlow](https://github.com/langflow-ai/langflow) - The amazing visual LLM framework
 - [LangFlow Embedded Chat](https://github.com/langflow-ai/langflow-embedded-chat) - Original web component inspiration
+
+## 📝 Markdown Support
+
+The widget supports **automatic markdown rendering** for bot messages using [react-native-marked](https://www.npmjs.com/package/react-native-marked), making responses more readable and well-formatted.
+
+### Features
+
+- ✅ **Headings** (H1, H2, H3)
+- ✅ **Bold** and *italic* text
+- ✅ `Inline code` and code blocks
+- ✅ Lists (bulleted and numbered)
+- ✅ Links (displayed with underline)
+- ✅ Blockquotes
+- ✅ **Native React Native rendering** - optimized for mobile
+- ✅ **Graceful fallback** when react-native-marked is not available
+
+### Installation
+
+To enable markdown rendering, install the required dependencies:
+
+```bash
+npm install react-native-marked react-native-svg
+# or
+yarn add react-native-marked react-native-svg
+```
+
+> **Note**: `react-native-svg` is required by `react-native-marked` for rendering certain elements.
+
+### Usage
+
+```jsx
+<LangFlowChatWidget
+  flowId="your-flow-id"
+  hostUrl="https://your-langflow-host.com"
+  enableMarkdown={true} // Enable markdown (default: true)
+/>
+```
+
+### Styling
+
+Markdown elements are automatically styled to match your message theme:
+
+```jsx
+<LangFlowChatWidget
+  botMessageStyle={{
+    color: "#333",
+    fontSize: 16,
+    lineHeight: 22
+  }}
+  enableMarkdown={true}
+/>
+```
+
+### Without Markdown
+
+If you prefer plain text or don't want to install the dependencies:
+
+```jsx
+<LangFlowChatWidget
+  enableMarkdown={false} // Disable markdown rendering
+/>
+```
+
+## �� Citation Bubbles
