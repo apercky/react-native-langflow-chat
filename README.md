@@ -116,8 +116,9 @@ const CustomChatIcon = () => (
   // Development debugging
   debugEnabled={__DEV__} // Enable logs in development only
   
-  // Markdown rendering
+  // Markdown rendering & Typography
   enableMarkdown={true} // Enable markdown for bot messages
+  fontSize={14} // Unified font size for all text (default: 12)
   
   // Event Handlers
   onMessage={(message) => console.log('Message:', message)}
@@ -217,6 +218,7 @@ The component supports full localization with customizable text strings:
 | `startOpen` | `boolean` | `false` | Whether to start with chat modal open |
 | `debugEnabled` | `boolean` | `false` | Enable debug console logs for development |
 | `enableMarkdown` | `boolean` | `true` | Enable markdown rendering for bot messages |
+| `fontSize` | `number` | `12` | Unified font size for all text (messages, citations, markdown) |
 
 ### Custom Trigger Button
 
@@ -232,6 +234,8 @@ The component supports full localization with customizable text strings:
 | `botMessageStyle` | `ViewStyle & TextStyle` | Styling for bot message bubbles and text |
 | `userMessageStyle` | `ViewStyle & TextStyle` | Styling for user message bubbles and text |
 | `errorMessageStyle` | `ViewStyle & TextStyle` | Styling for error message bubbles and text |
+
+> **Note**: Don't use `fontSize` in individual message styles. Use the global `fontSize` prop instead for consistent typography across all messages.
 
 ### UI Component Styling
 
@@ -341,6 +345,7 @@ Body: {
 ### Debug Mode
 
 Enable debugging by monitoring console logs for:
+
 - API requests and responses
 - Error messages
 - Widget state changes
@@ -429,7 +434,8 @@ If you prefer plain text rendering:
 ### Metro bundler errors with react-markdown
 
 If you encounter Metro bundler errors like:
-```
+
+```txt
 Metro has encountered an error: While trying to resolve module `devlop` from file...
 ```
 
@@ -463,6 +469,46 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - [LangFlow](https://github.com/langflow-ai/langflow) - The amazing visual LLM framework
 - [LangFlow Embedded Chat](https://github.com/langflow-ai/langflow-embedded-chat) - Original web component inspiration
+
+## 🎨 Typography & Font Size Control
+
+The widget provides **unified font size control** across all text elements, ensuring consistent typography throughout the chat interface.
+
+### Unified Font Size System
+
+The `fontSize` prop controls the size of **all text elements** in the chat:
+
+- ✅ **User messages** - Text in user chat bubbles
+- ✅ **Bot messages** - All markdown and plain text
+- ✅ **Citations** - Citation bubbles and numbers (scaled proportionally)
+- ✅ **Headings** - Scaled proportionally to the base fontSize
+- ✅ **Code blocks** - Slightly smaller than base fontSize
+
+```jsx
+<LangFlowChatWidget
+  fontSize={14} // Controls ALL text in the chat
+  // No need to set fontSize in individual styles
+  botMessageStyle={{
+    color: "#333",
+    backgroundColor: "#f0f8ff", // Only styling, not font size
+  }}
+  userMessageStyle={{
+    backgroundColor: "#007AFF", // Only styling, not font size
+  }}
+/>
+```
+
+### Font Size Scaling
+
+| Element | Size Calculation | Example (fontSize=14) |
+|---------|------------------|----------------------|
+| **Normal text** | `fontSize` | 14px |
+| **Headings H1** | `fontSize + 8` | 22px |
+| **Headings H2** | `fontSize + 5` | 19px |
+| **Headings H3** | `fontSize + 3` | 17px |
+| **Code blocks** | `fontSize - 1` | 13px |
+| **Citation bubbles** | `fontSize + 2` | 16px |
+| **Citation text** | `fontSize - 4` | 10px |
 
 ## 📝 Markdown Support
 
@@ -498,6 +544,7 @@ yarn add react-native-marked react-native-svg
   flowId="your-flow-id"
   hostUrl="https://your-langflow-host.com"
   enableMarkdown={true} // Enable markdown (default: true)
+  fontSize={14} // Set unified font size for all text
 />
 ```
 
@@ -509,9 +556,10 @@ Markdown elements are automatically styled to match your message theme:
 <LangFlowChatWidget
   botMessageStyle={{
     color: "#333",
-    fontSize: 16,
-    lineHeight: 22
+    backgroundColor: "#f0f8ff",
+    borderRadius: 16,
   }}
+  fontSize={16} // Controls font size for all text uniformly
   enableMarkdown={true}
 />
 ```
