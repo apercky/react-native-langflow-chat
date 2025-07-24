@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Clipboard,
   Dimensions,
   KeyboardAvoidingView,
   Modal,
@@ -606,6 +607,11 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     });
   };
 
+  const handleCopyMessage = (text: string) => {
+    Clipboard.setString(text);
+    debugLog("📋 Message copied to clipboard:", text.substring(0, 50) + "...");
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -644,8 +650,27 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
               : { ...styles.botMessageBubble, ...botMessageStyle },
           ]}
         >
+          {/* Copy button */}
+          <TouchableOpacity
+            style={[
+              styles.copyButton,
+              isUser ? styles.copyButtonUser : styles.copyButtonBot,
+            ]}
+            onPress={() => handleCopyMessage(message.text)}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons
+              name="content-copy"
+              size={16}
+              color={isUser ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)"}
+            />
+          </TouchableOpacity>
+
+          {/* Message content */}
           {isUser ? (
-            <Text style={messageStyle}>{message.text}</Text>
+            <View style={styles.userMessageContent}>
+              <Text style={messageStyle}>{message.text}</Text>
+            </View>
           ) : (
             <MessageWithCitations
               text={message.text}
@@ -906,6 +931,9 @@ const styles = StyleSheet.create({
   messageContainer: {
     marginVertical: 4,
   },
+  userMessageContent: {
+    paddingRight: 20,
+  },
   userMessageContainer: {
     alignItems: "flex-end",
   },
@@ -1016,6 +1044,24 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.08)",
+  },
+  copyButton: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  copyButtonUser: {
+    backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  copyButtonBot: {
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
 });
 

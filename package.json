@@ -44,16 +44,16 @@
   },
   "homepage": "https://github.com/apercky/react-native-langflow-chat#readme",
   "peerDependencies": {
+    "@expo/vector-icons": ">=13.0.0",
     "react": ">=16.8.0",
     "react-native": ">=0.60.0",
-    "@expo/vector-icons": ">=13.0.0",
     "react-native-marked": ">=7.0.0",
     "react-native-svg": ">=13.0.0"
   },
   "devDependencies": {
+    "@expo/vector-icons": "^14.0.0",
     "@types/react": "^18.0.0",
     "@types/react-native": "^0.70.0",
-    "@expo/vector-icons": "^14.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.45.0",
@@ -83,5 +83,6 @@
   "resolutions": {
     "@types/react": "^18.0.0",
     "@types/react-native": "^0.70.0"
-  }
+  },
+  "dependencies": {}
 }
