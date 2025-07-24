@@ -721,6 +721,14 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                         `🔥 REAL-TIME UI update with text (${fullResponse.length} chars)`
                       );
                       onChunk(fullResponse);
+
+                      // Trigger more frequent scrolls during streaming
+                      if (scrollViewRef.current) {
+                        const isAtBottom = isScrolledToBottom();
+                        if (isAtBottom) {
+                          scrollToBottom(true);
+                        }
+                      }
                     }
                   }
                 }
@@ -841,12 +849,23 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     }
 
     let botMessageId: string | null = null;
+    let isAtBottomBeforeResponse = true; // Assume we're at bottom initially
+    let lastScrollTime = 0; // Per limitare la frequenza di scroll
+
+    // Check if we're at bottom before starting response
+    setTimeout(() => {
+      isAtBottomBeforeResponse = isScrolledToBottom();
+    }, 100);
 
     try {
       const response = await sendMessageToLangFlow(
         userMessage.text,
         // Streaming callback to update the bot message in real-time
         (chunk: string) => {
+          const now = Date.now();
+          const shouldScroll =
+            isAtBottomBeforeResponse && now - lastScrollTime > 100;
+
           setMessages((prev) => {
             // If we don't have a bot message ID yet, create the first bot message
             if (!botMessageId) {
@@ -858,8 +877,9 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                 timestamp: Date.now(),
               };
 
-              // Scroll to bottom on first chunk
-              setTimeout(() => scrollToBottom(), 50);
+              // Scroll to bottom on first chunk - immediate
+              setTimeout(() => scrollToBottom(true), 10);
+              lastScrollTime = now;
 
               return [...prev, botMessage];
             } else {
@@ -868,9 +888,11 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                 msg.id === botMessageId ? { ...msg, text: chunk } : msg
               );
 
-              // Scroll to bottom on each chunk update if already at bottom
-              if (!showScrollToBottom) {
-                setTimeout(() => scrollToBottom(), 50);
+              // Scroll to bottom on each chunk update if user was already at bottom
+              // Limita la frequenza di scroll a max 10 volte al secondo
+              if (shouldScroll) {
+                setTimeout(() => scrollToBottom(!showScrollToBottom), 10);
+                lastScrollTime = now;
               }
 
               return updatedMessages;
@@ -943,10 +965,30 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     }
   };
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+  const scrollToBottom = (immediate: boolean = false) => {
+    if (immediate) {
+      // Scroll immediato senza animazione
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+    } else {
+      // Scroll con animazione (default)
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+    }
+  };
+
+  // Funzione per verificare se siamo già in fondo alla chat
+  const isScrolledToBottom = () => {
+    if (!scrollViewRef.current) return true;
+
+    // Accediamo alle proprietà in modo sicuro
+    const contentOffset = scrollViewRef.current as any;
+    const contentOffsetY = contentOffset?.contentOffset?.y || 0;
+    const contentHeight = contentOffset?.contentSize?.height || 0;
+    const scrollViewHeight = contentOffset?.layoutMeasurement?.height || 0;
+
+    // Considera "in fondo" se siamo a meno di 100px dal fondo
+    return contentHeight - (contentOffsetY + scrollViewHeight) <= 100;
   };
 
   const handleScroll = (event: any) => {
