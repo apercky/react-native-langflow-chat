@@ -39,7 +39,6 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   outputType = "chat",
   outputComponent,
   // Localization props with English defaults
-  loadingText = "Thinking...",
   errorMessage = "Sorry, there was an error processing your message. Please try again.",
   fallbackMessage = "I received your message but couldn't generate a proper response.",
   sourceTooltipTitle = "Source",
@@ -52,7 +51,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   startOpen = false,
   debugEnabled = false,
   enableMarkdown = true,
-  markdownFontSize = 13,
+  fontSize = 12,
   botMessageStyle,
   chatWindowStyle,
   errorMessageStyle,
@@ -614,6 +613,10 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
 
     const messageStyle = [
       styles.messageText,
+      {
+        fontSize: fontSize,
+        lineHeight: Math.round(fontSize * 1.4), // lineHeight proporzionale (1.4x fontSize)
+      },
       isUser
         ? { ...styles.userMessageText, ...userMessageStyle }
         : isError
@@ -644,7 +647,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
               ofText={ofText}
               citationBubbleColor={citationBubbleColor}
               enableMarkdown={enableMarkdown && !isError}
-              markdownFontSize={markdownFontSize}
+              fontSize={fontSize}
             />
           )}
         </View>
@@ -922,8 +925,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   messageText: {
-    fontSize: 14,
-    lineHeight: 19,
+    // fontSize e lineHeight sono ora controllati dinamicamente dal prop fontSize
     fontWeight: "400",
   },
   userMessageText: {

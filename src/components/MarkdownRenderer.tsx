@@ -15,92 +15,112 @@ try {
 interface MarkdownRendererProps {
   content: string;
   style: any;
-  markdownFontSize: number;
+  fontSize: number;
   enableMarkdown?: boolean;
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   style,
-  markdownFontSize,
+  fontSize,
   enableMarkdown = true,
 }) => {
   if (!enableMarkdown || !useMarkdown) {
-    // Anche il testo normale deve usare markdownFontSize per coerenza
-    return (
-      <Text style={[style, { fontSize: markdownFontSize }]}>{content}</Text>
-    );
+    // Anche il testo normale deve usare fontSize per coerenza
+    return <Text style={[style, { fontSize: fontSize }]}>{content}</Text>;
   }
 
   try {
+    // Crea uno stile base con il fontSize per assicurare consistenza
+    const baseTextStyle = {
+      ...style,
+      fontSize: fontSize,
+    };
+
     // Usa useMarkdown hook invece del componente per evitare VirtualizedLists nested
     const elements = useMarkdown(content, {
       styles: {
+        // Stile di default per tutto il testo
+        text: baseTextStyle,
+        body: baseTextStyle,
+        root: baseTextStyle,
+
+        // Headings proporzionali al fontSize
         heading1: {
-          fontSize: Math.max(markdownFontSize + 8, 18), // Più piccoli ma proporzionali
+          ...baseTextStyle,
+          fontSize: Math.max(fontSize + 8, 18),
           fontWeight: "bold",
           marginVertical: 4,
-          color: style.color || "#000",
         },
         heading2: {
-          fontSize: Math.max(markdownFontSize + 5, 16),
+          ...baseTextStyle,
+          fontSize: Math.max(fontSize + 5, 16),
           fontWeight: "bold",
           marginVertical: 3,
-          color: style.color || "#000",
         },
         heading3: {
-          fontSize: Math.max(markdownFontSize + 3, 15),
+          ...baseTextStyle,
+          fontSize: Math.max(fontSize + 3, 15),
           fontWeight: "bold",
           marginVertical: 2,
-          color: style.color || "#000",
         },
+
+        // Paragrafi con dimensione base
         paragraph: {
-          ...style,
-          fontSize: markdownFontSize, // Stessa dimensione del testo normale
+          ...baseTextStyle,
           marginVertical: 2,
         },
+
+        // Testo in grassetto - mantiene la dimensione base
         strong: {
-          ...style,
-          fontSize: markdownFontSize, // Stessa dimensione del testo normale
+          ...baseTextStyle,
           fontWeight: "bold",
         },
+
+        // Testo in corsivo - mantiene la dimensione base
         em: {
-          ...style,
-          fontSize: markdownFontSize, // Stessa dimensione del testo normale
+          ...baseTextStyle,
           fontStyle: "italic",
         },
+
+        // Codice inline - leggermente più piccolo
         codespan: {
-          ...style,
-          fontSize: Math.max(markdownFontSize - 1, 11),
+          ...baseTextStyle,
+          fontSize: Math.max(fontSize - 1, 11),
           fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
           backgroundColor: "rgba(0,0,0,0.1)",
           paddingHorizontal: 4,
           paddingVertical: 2,
           borderRadius: 4,
         },
+
+        // Blocchi di codice - leggermente più piccoli
         code: {
-          ...style,
-          fontSize: Math.max(markdownFontSize - 1, 11),
+          ...baseTextStyle,
+          fontSize: Math.max(fontSize - 1, 11),
           fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
           backgroundColor: "rgba(0,0,0,0.1)",
           padding: 8,
           borderRadius: 6,
           marginVertical: 4,
         },
+
+        // Elementi di lista - dimensione base
         listItem: {
-          ...style,
-          fontSize: markdownFontSize, // Stessa dimensione del testo normale
+          ...baseTextStyle,
           marginVertical: 1,
         },
+
+        // Link - dimensione base
         link: {
-          ...style,
-          fontSize: markdownFontSize, // Stessa dimensione del testo normale
+          ...baseTextStyle,
           color: "#007AFF",
           textDecorationLine: "underline",
         },
+
+        // Citazioni - dimensione base
         blockquote: {
-          ...style,
-          fontSize: markdownFontSize, // Stessa dimensione del testo normale
+          ...baseTextStyle,
           fontStyle: "italic",
           borderLeftWidth: 3,
           borderLeftColor: "#ccc",
@@ -138,7 +158,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   }
 
   // Fallback finale con dimensione coerente
-  return <Text style={[style, { fontSize: markdownFontSize }]}>{content}</Text>;
+  return <Text style={[style, { fontSize: fontSize }]}>{content}</Text>;
 };
 
 export default MarkdownRenderer;

@@ -62,7 +62,7 @@ export interface LangFlowChatWidgetProps {
   startOpen?: boolean;
   debugEnabled?: boolean;
   enableMarkdown?: boolean;
-  markdownFontSize?: number;
+  fontSize?: number;
 
   // Styling props - converted to React Native styles
   botMessageStyle?: ViewStyle & TextStyle;

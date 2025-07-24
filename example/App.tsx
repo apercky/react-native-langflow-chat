@@ -97,6 +97,7 @@ export default function App() {
         debugEnabled={__DEV__} // Enable debug logs in development
         enableMarkdown={true} // Enable markdown rendering
         // Event handlers
+        fontSize={12}
         onMessage={handleMessage}
         onError={handleError}
         onLoad={handleLoad}

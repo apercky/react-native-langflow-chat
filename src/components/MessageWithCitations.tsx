@@ -44,7 +44,7 @@ export const MessageWithCitations: React.FC<{
   ofText: string;
   citationBubbleColor: string;
   enableMarkdown: boolean;
-  markdownFontSize: number;
+  fontSize: number;
 }> = ({
   text,
   messageStyle,
@@ -53,7 +53,7 @@ export const MessageWithCitations: React.FC<{
   ofText,
   citationBubbleColor,
   enableMarkdown,
-  markdownFontSize,
+  fontSize,
 }) => {
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(
     null
@@ -78,7 +78,7 @@ export const MessageWithCitations: React.FC<{
               key={`text-${keyCounter++}`}
               content={currentText.substring(0, splitIndex)}
               style={messageStyle}
-              markdownFontSize={markdownFontSize}
+              fontSize={fontSize}
               enableMarkdown={enableMarkdown}
             />
           );
@@ -91,6 +91,7 @@ export const MessageWithCitations: React.FC<{
             citation={citation}
             onPress={() => setSelectedCitation(citation)}
             citationBubbleColor={citationBubbleColor}
+            fontSize={fontSize}
           />
         );
 
@@ -106,7 +107,7 @@ export const MessageWithCitations: React.FC<{
           key={`text-final`}
           content={currentText}
           style={messageStyle}
-          markdownFontSize={markdownFontSize}
+          fontSize={fontSize}
           enableMarkdown={enableMarkdown}
         />
       );

@@ -15,15 +15,32 @@ export const CitationBubble: React.FC<{
   citation: Citation;
   onPress: () => void;
   citationBubbleColor: string;
-}> = ({ citation, onPress, citationBubbleColor }) => (
-  <TouchableOpacity
-    style={[styles.citationBubble, { backgroundColor: citationBubbleColor }]}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <Text style={styles.citationNumber}>{citation.id}</Text>
-  </TouchableOpacity>
-);
+  fontSize?: number;
+}> = ({ citation, onPress, citationBubbleColor, fontSize = 12 }) => {
+  // Calcola le dimensioni del pallino basate sul fontSize - più piccole per le citazioni
+  const bubbleSize = Math.max(fontSize + 2, 16); // Minimo 16px, più discreto
+  const textSize = Math.max(fontSize - 4, 8); // Testo più piccolo per le citazioni
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.citationBubble,
+        {
+          backgroundColor: citationBubbleColor,
+          width: bubbleSize,
+          height: bubbleSize,
+          borderRadius: bubbleSize / 2,
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.citationNumber, { fontSize: textSize }]}>
+        {citation.id}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
 // Componente per il tooltip della citazione
 export const CitationTooltip: React.FC<{
@@ -62,9 +79,7 @@ export const CitationTooltip: React.FC<{
 
 const styles = StyleSheet.create({
   citationBubble: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    // Le dimensioni sono ora calcolate dinamicamente
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 4,
