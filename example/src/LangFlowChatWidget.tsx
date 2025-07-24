@@ -422,12 +422,15 @@ const LoadingBubble: React.FC<{
             styles.messageBubble,
             styles.botMessageBubble,
             styles.loadingBubble,
-            botMessageStyle,
+            botMessageStyle, // Usa lo stesso stile delle bubble bot
           ]}
         >
           <LoadingDots
             style={styles.bubbleLoadingDots}
-            dotStyle={styles.bubbleLoadingDot}
+            dotStyle={[
+              styles.bubbleLoadingDot,
+              { color: botMessageStyle?.color || "#666" }, // Usa il colore del testo bot
+            ]}
           />
         </View>
       </View>
@@ -1414,9 +1417,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 15,
-    backgroundColor: "#f0f0f0",
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+    // Rimuovo background e border fissi - userà quelli di botMessageBubble
   },
   bubbleLoadingDots: {
     marginLeft: 4,
