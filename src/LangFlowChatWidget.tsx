@@ -533,6 +533,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     sessionId ||
       `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Helper functions for conditional logging
   const debugLog = (...args: any[]) => {
@@ -587,6 +588,9 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
         pulseAnimation.stop();
       };
     }
+
+    // Return esplicito quando non è in loading
+    return undefined;
   }, [isLoading]);
 
   const handleCloseModal = () => {
@@ -599,6 +603,11 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     setIsLoading(false);
     // Reset del pulsante scroll to bottom
     setShowScrollToBottom(false);
+    // Pulisce il timeout dello scroll
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
+    }
     // Annulla eventuali richieste in corso
     if (abortController) {
       abortController.abort();
@@ -656,192 +665,137 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
         body: JSON.stringify(body, null, 2),
       });
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal: controller?.signal, // Add abort signal
-      });
-
-      debugLog("📡 LangFlow Response Status:", response.status);
-
-      if (!response.ok) {
-        // Try to get more details from the error response
-        let errorDetails = {};
-        try {
-          const errorText = await response.text();
-          debugLog("❌ LangFlow Error Response Body:", errorText);
-
-          try {
-            errorDetails = JSON.parse(errorText);
-            debugLog("❌ LangFlow Error Details (JSON):", errorDetails);
-          } catch {
-            debugLog("❌ LangFlow Error Details (Text):", errorText);
-            errorDetails = { error: errorText };
-          }
-        } catch (textError) {
-          debugLog("❌ Could not read error response body:", textError);
-        }
-
-        throw new Error(
-          `HTTP error! status: ${response.status}, details: ${JSON.stringify(
-            errorDetails
-          )}`
-        );
-      }
-
-      // Check if streaming is available
-      if (!response.body) {
-        debugLog("⚠️ Response body is null, falling back to text response");
-        debugLog("🔄 Using FALLBACK mode - but processing streaming events");
-
-        // Fallback to non-streaming response but process streaming events
-        const responseText = await response.text();
-        debugLog("✅ LangFlow Fallback Response:", responseText);
-
-        // Process streaming events from the text response
-        const lines = responseText.split("\n").filter((line) => line.trim());
+      // Use XMLHttpRequest for true real-time streaming
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
         let fullResponse = "";
-        const tokens: string[] = [];
+        let buffer = "";
+        let lastProcessedLength = 0;
 
-        // First, collect all tokens
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line);
-            debugLog("📨 Parsed event:", JSON.stringify(data, null, 2));
-
-            // Handle "token" events with streaming chunks
-            if (data.event === "token" && data.data && data.data.chunk) {
-              const chunkText = data.data.chunk;
-              debugLog("💬 Token chunk:", chunkText);
-
-              if (chunkText) {
-                tokens.push(chunkText);
-              }
-            }
-          } catch (parseError) {
-            debugLog("⚠️ Could not parse line as JSON:", line, parseError);
-          }
+        // Set up abort handling
+        if (controller) {
+          controller.signal.addEventListener("abort", () => {
+            debugLog("🛑 Aborting XMLHttpRequest...");
+            xhr.abort();
+            reject(new Error("AbortError"));
+          });
         }
 
-        // Then, simulate streaming by sending tokens with delay
-        let accumulatedText = "";
-        for (let i = 0; i < tokens.length; i++) {
-          const token = tokens[i];
-          accumulatedText += token;
-          const textToSend = accumulatedText;
+        xhr.open("POST", url, true);
 
-          // Use setTimeout to simulate streaming delay
-          setTimeout(() => {
-            if (onChunk) {
-              onChunk(textToSend);
-            }
-          }, i * 50); // 50ms delay between tokens
-        }
+        // Set headers
+        Object.entries(headers).forEach(([key, value]) => {
+          xhr.setRequestHeader(key, value);
+        });
 
-        // Set fullResponse for return value
-        fullResponse = tokens.join("");
+        // Process chunks as they arrive
+        xhr.onprogress = (event) => {
+          // Get only the new data
+          const newData = xhr.responseText.substring(lastProcessedLength);
+          lastProcessedLength = xhr.responseText.length;
 
-        if (fullResponse) {
-          debugLog("💬 Fallback streaming response:", fullResponse);
-          return fullResponse;
-        } else {
-          return fallbackMessage;
-        }
-      }
+          if (newData) {
+            debugLog("📦 New streaming chunk received:", newData);
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullResponse = "";
+            // Process each line (each line is a complete JSON event)
+            const lines = newData.split("\n");
 
-      debugLog("🚀 Using STREAMING mode - processing chunks");
+            for (const line of lines) {
+              if (!line.trim()) continue;
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
+              try {
+                const data = JSON.parse(line.trim());
+                debugLog("📨 Parsed event:", JSON.stringify(data, null, 2));
 
-          if (done) {
-            debugLog("✅ Stream completed");
-            break;
-          }
+                // Handle "token" events with streaming chunks
+                if (data.event === "token" && data.data && data.data.chunk) {
+                  const chunkText = data.data.chunk;
+                  debugLog("💬 REAL-TIME token chunk:", chunkText);
 
-          const chunk = decoder.decode(value, { stream: true });
-          debugLog("📦 Raw chunk:", chunk);
+                  if (chunkText) {
+                    fullResponse += chunkText;
 
-          // Split by lines since each JSON event is on a separate line
-          const lines = chunk.split("\n").filter((line) => line.trim());
-
-          for (const line of lines) {
-            try {
-              const data = JSON.parse(line);
-              debugLog("📨 Parsed event:", JSON.stringify(data, null, 2));
-
-              // Handle "token" events with streaming chunks
-              if (data.event === "token" && data.data && data.data.chunk) {
-                const chunkText = data.data.chunk;
-                debugLog("💬 Token chunk:", chunkText);
-
-                if (chunkText) {
-                  fullResponse += chunkText;
-
-                  // Call the chunk callback to update UI in real-time with accumulated text
-                  if (onChunk) {
-                    onChunk(fullResponse);
+                    // Call the chunk callback to update UI in REAL-TIME
+                    if (onChunk) {
+                      debugLog(
+                        `🔥 REAL-TIME UI update with text (${fullResponse.length} chars)`
+                      );
+                      onChunk(fullResponse);
+                    }
                   }
                 }
-              }
-              // Handle "end" event with final result
-              else if (data.event === "end" && data.data && data.data.result) {
-                debugLog("🏁 Stream ended with final result");
-                const result = data.data.result;
+                // Handle "end" event
+                else if (
+                  data.event === "end" &&
+                  data.data &&
+                  data.data.result
+                ) {
+                  debugLog("🏁 Stream ended with final result");
+                  // Final message handling if needed
+                  const result = data.data.result;
 
-                // Extract final message from the end event
-                if (result.outputs && result.outputs.length > 0) {
-                  const output = result.outputs[0];
-                  if (output.outputs && output.outputs.length > 0) {
-                    const firstOutput = output.outputs[0];
-                    if (firstOutput.results && firstOutput.results.message) {
-                      const finalMessage =
-                        firstOutput.results.message.text ||
-                        firstOutput.results.message;
-                      debugLog(
-                        "📝 Final message from end event:",
-                        finalMessage
-                      );
-                      // Use final message as fallback if streaming didn't capture everything
-                      if (
-                        finalMessage &&
-                        finalMessage.length > fullResponse.length
-                      ) {
-                        fullResponse = finalMessage;
+                  // Extract final message from the end event
+                  if (result.outputs && result.outputs.length > 0) {
+                    const output = result.outputs[0];
+                    if (output.outputs && output.outputs.length > 0) {
+                      const firstOutput = output.outputs[0];
+                      if (firstOutput.results && firstOutput.results.message) {
+                        const finalMessage =
+                          firstOutput.results.message.text ||
+                          firstOutput.results.message;
+                        debugLog(
+                          "📝 Final message from end event:",
+                          finalMessage
+                        );
+                        // Use final message as fallback if streaming didn't capture everything
+                        if (
+                          finalMessage &&
+                          finalMessage.length > fullResponse.length
+                        ) {
+                          fullResponse = finalMessage;
+                          // Update UI with complete message if needed
+                          if (onChunk) {
+                            onChunk(fullResponse);
+                          }
+                        }
                       }
                     }
                   }
                 }
+                // Handle "add_message" events (optional, mainly for logging)
+                else if (data.event === "add_message") {
+                  debugLog("📨 Message added:", data.data.text);
+                }
+              } catch (parseError) {
+                debugLog("⚠️ Could not parse line as JSON:", line, parseError);
               }
-              // Handle "add_message" events (optional, mainly for logging)
-              else if (data.event === "add_message") {
-                debugLog("📨 Message added:", data.data.text);
-              }
-            } catch (parseError) {
-              debugLog("⚠️ Could not parse line as JSON:", line, parseError);
             }
           }
-        }
-      } finally {
-        reader.releaseLock();
-      }
+        };
 
-      if (!fullResponse) {
-        debugLog("⚠️ No response content found, using fallback");
-        debugLog("⚠️ fullResponse length:", fullResponse.length);
-        debugLog("⚠️ fullResponse value:", JSON.stringify(fullResponse));
-        fullResponse = fallbackMessage;
-      }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            debugLog("✅ XMLHttpRequest completed successfully");
+            resolve(fullResponse || fallbackMessage);
+          } else {
+            debugError("❌ HTTP error:", xhr.status, xhr.statusText);
+            reject(new Error(`HTTP error: ${xhr.status}`));
+          }
+        };
 
-      debugLog("💬 Final complete response:", fullResponse);
-      debugLog("💬 Final response length:", fullResponse.length);
-      return fullResponse;
+        xhr.onerror = () => {
+          debugError("💥 XMLHttpRequest network error");
+          reject(new Error("Network error"));
+        };
+
+        xhr.onabort = () => {
+          debugLog("🛑 XMLHttpRequest aborted");
+          reject(new Error("AbortError"));
+        };
+
+        // Send the request
+        xhr.send(JSON.stringify(body));
+      });
     } catch (error) {
       // Handle AbortError separately to avoid logging as error
       if (error instanceof Error && error.name === "AbortError") {
@@ -903,12 +857,23 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                 text: chunk,
                 timestamp: Date.now(),
               };
+
+              // Scroll to bottom on first chunk
+              setTimeout(() => scrollToBottom(), 50);
+
               return [...prev, botMessage];
             } else {
               // Update existing bot message
-              return prev.map((msg) =>
+              const updatedMessages = prev.map((msg) =>
                 msg.id === botMessageId ? { ...msg, text: chunk } : msg
               );
+
+              // Scroll to bottom on each chunk update if already at bottom
+              if (!showScrollToBottom) {
+                setTimeout(() => scrollToBottom(), 50);
+              }
+
+              return updatedMessages;
             }
           });
         },
@@ -985,10 +950,35 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   };
 
   const handleScroll = (event: any) => {
+    // Estrai i valori dall'evento PRIMA del setTimeout per evitare event pooling issues
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const isAtBottom =
-      contentOffset.y + layoutMeasurement.height >= contentSize.height - 50;
-    setShowScrollToBottom(!isAtBottom && messages.length > 0);
+    const scrollPosition = contentOffset.y;
+    const contentHeight = contentSize.height;
+    const containerHeight = layoutMeasurement.height;
+
+    // Clear previous timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Debounce scroll handling
+    scrollTimeoutRef.current = setTimeout(() => {
+      // Calcola se siamo vicini al fondo (threshold più generoso)
+      const distanceFromBottom =
+        contentHeight - (scrollPosition + containerHeight);
+      const isNearBottom = distanceFromBottom <= 100; // 100px threshold instead of 50px
+
+      // Mostra il pulsante solo se:
+      // 1. Non siamo vicini al fondo
+      // 2. Ci sono messaggi da mostrare
+      // 3. Il contenuto è più alto del container (c'è qualcosa da scrollare)
+      const shouldShow =
+        !isNearBottom &&
+        messages.length > 0 &&
+        contentHeight > containerHeight + 50; // Buffer aggiuntivo
+
+      setShowScrollToBottom(shouldShow);
+    }, 100); // 100ms debounce
   };
 
   const scrollToBottomPressed = () => {
@@ -1559,8 +1549,9 @@ const styles = StyleSheet.create({
   },
   scrollToBottomButton: {
     position: "absolute",
-    bottom: 90, // Sopra l'input container (che ha circa 80px di altezza)
-    right: 20,
+    bottom: 110, // Più spazio dall'input container (era 90)
+    left: "50%", // Centro orizzontale
+    marginLeft: -22, // Metà della larghezza (44/2) per centrare
     width: 44,
     height: 44,
     borderRadius: 22,
