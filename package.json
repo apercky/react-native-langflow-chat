@@ -17,7 +17,9 @@
     "prepare": "npm run build",
     "test": "jest",
     "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix"
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "example:sync": "bash scripts/sync-example.sh",
+    "example:clean": "bash scripts/clean-example.sh"
   },
   "keywords": [
     "react-native",

@@ -11,468 +11,15 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TextStyle,
   TouchableOpacity,
   View,
-  ViewStyle,
 } from "react-native";
 
-// Optional markdown support - only import if available
-let ReactNativeMarked: any = null;
-let useMarkdown: any = null;
-try {
-  const marked = require("react-native-marked");
-  ReactNativeMarked = marked.default;
-  useMarkdown = marked.useMarkdown;
-} catch (error) {
-  // react-native-marked not available, will use plain text
-}
-
-// Types
-export interface LangFlowMessage {
-  type: "user_message" | "bot_message" | "system" | "error";
-  text: string;
-  timestamp?: number;
-  metadata?: Record<string, any>;
-}
-
-export interface LangFlowError {
-  message: string;
-  code?: string;
-  details?: any;
-}
-
-export type ChatPosition =
-  | "top-left"
-  | "top-center"
-  | "top-right"
-  | "center-left"
-  | "center-right"
-  | "bottom-right"
-  | "bottom-center"
-  | "bottom-left";
-
-export interface LangFlowChatWidgetProps {
-  // Required props
-  flowId: string;
-  hostUrl: string;
-  apiKey?: string;
-
-  // Optional configuration
-  windowTitle?: string;
-  chatInputs?: Record<string, any>;
-  chatInputField?: string;
-  tweaks?: Record<string, any>;
-  sessionId?: string;
-  additionalHeaders?: Record<string, any>;
-
-  // Content props
-  placeholder?: string;
-  placeholderSending?: string;
-  inputType?: string;
-  outputType?: string;
-  outputComponent?: string;
-
-  // Localization props
-  loadingText?: string;
-  errorMessage?: string;
-  fallbackMessage?: string;
-  sourceTooltipTitle?: string;
-  pageText?: string;
-  ofText?: string;
-  closeButtonAriaLabel?: string;
-
-  // Behavior props
-  chatPosition?: ChatPosition;
-  height?: number;
-  width?: number;
-  online?: boolean;
-  startOpen?: boolean;
-  debugEnabled?: boolean;
-  enableMarkdown?: boolean;
-
-  // Styling props - converted to React Native styles
-  botMessageStyle?: ViewStyle & TextStyle;
-  chatWindowStyle?: ViewStyle;
-  errorMessageStyle?: ViewStyle & TextStyle;
-  inputContainerStyle?: ViewStyle;
-  inputStyle?: ViewStyle & TextStyle;
-  sendButtonStyle?: ViewStyle & TextStyle;
-  userMessageStyle?: ViewStyle & TextStyle;
-  citationBubbleColor?: string;
-
-  // Custom trigger button
-  triggerComponent?: React.ReactNode;
-  triggerButtonStyle?: ViewStyle;
-
-  // Events
-  onMessage?: (message: LangFlowMessage) => void;
-  onError?: (error: LangFlowError) => void;
-  onLoad?: () => void;
-}
-
-interface ChatMessage {
-  id: string;
-  type: "user" | "bot" | "system" | "error";
-  text: string;
-  timestamp: number;
-}
-
-// Aggiungiamo le interfacce per le citazioni
-interface Citation {
-  id: number;
-  src: string;
-  page: string;
-  total_pages: string;
-  displayText: string;
-}
-
-interface ParsedMessage {
-  text: string;
-  citations: Citation[];
-}
-
-// Funzione per parsare i messaggi e estrarre le citazioni
-const parseMessageWithCitations = (text: string): ParsedMessage => {
-  const citationRegex =
-    /\[src name="([^"]+)" page="([^"]+)" total_pages="([^"]+)"\]/g;
-  const citations: Citation[] = [];
-  let citationCounter = 1;
-
-  // Sostituiamo ogni citazione con un placeholder numerato
-  const parsedText = text.replace(
-    citationRegex,
-    (match, src, page, total_pages) => {
-      const citation: Citation = {
-        id: citationCounter,
-        src,
-        page,
-        total_pages,
-        displayText: `${src} - Page ${page}/${total_pages}`,
-      };
-      citations.push(citation);
-      return `◐${citationCounter++}◑`; // Placeholder temporaneo
-    }
-  );
-
-  return { text: parsedText, citations };
-};
-
-// Componente per il pallino della citazione
-const CitationBubble: React.FC<{
-  citation: Citation;
-  onPress: () => void;
-  citationBubbleColor: string;
-}> = ({ citation, onPress, citationBubbleColor }) => (
-  <TouchableOpacity
-    style={[styles.citationBubble, { backgroundColor: citationBubbleColor }]}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <Text style={styles.citationNumber}>{citation.id}</Text>
-  </TouchableOpacity>
-);
-
-// Componente per il tooltip della citazione
-const CitationTooltip: React.FC<{
-  citation: Citation;
-  visible: boolean;
-  onClose: () => void;
-  sourceTitle: string;
-  pageText: string;
-  ofText: string;
-}> = ({ citation, visible, onClose, sourceTitle, pageText, ofText }) => {
-  if (!visible) return null;
-
-  return (
-    <Modal
-      transparent={true}
-      visible={visible}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity
-        style={styles.tooltipOverlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <View style={styles.tooltipContainer}>
-          <Text style={styles.tooltipTitle}>{sourceTitle}</Text>
-          <Text style={styles.tooltipText}>{citation.src}</Text>
-          <Text style={styles.tooltipPage}>
-            {pageText} {citation.page} {ofText} {citation.total_pages}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
-};
-
-// Componente per renderizzare il testo con citazioni
-const MessageWithCitations: React.FC<{
-  text: string;
-  messageStyle: any;
-  sourceTooltipTitle: string;
-  pageText: string;
-  ofText: string;
-  citationBubbleColor: string;
-  enableMarkdown: boolean;
-}> = ({
-  text,
-  messageStyle,
-  sourceTooltipTitle,
-  pageText,
-  ofText,
-  citationBubbleColor,
-  enableMarkdown,
-}) => {
-  const [selectedCitation, setSelectedCitation] = useState<Citation | null>(
-    null
-  );
-  const parsedMessage = parseMessageWithCitations(text);
-
-  // Componente per renderizzare markdown in React Native
-  const MarkdownRenderer: React.FC<{ content: string; style: any }> = ({
-    content,
-    style,
-  }) => {
-    if (!enableMarkdown || !ReactNativeMarked) {
-      return <Text style={style}>{content}</Text>;
-    }
-
-    try {
-      // Usa useMarkdown hook invece del componente per evitare VirtualizedLists nested
-      const elements = useMarkdown
-        ? useMarkdown(content, {
-            styles: {
-              heading1: {
-                fontSize: 24,
-                fontWeight: "bold",
-                marginVertical: 4,
-                color: style.color || "#000",
-              },
-              heading2: {
-                fontSize: 20,
-                fontWeight: "bold",
-                marginVertical: 3,
-                color: style.color || "#000",
-              },
-              heading3: {
-                fontSize: 18,
-                fontWeight: "bold",
-                marginVertical: 2,
-                color: style.color || "#000",
-              },
-              paragraph: {
-                ...style,
-                marginVertical: 2,
-              },
-              strong: {
-                ...style,
-                fontWeight: "bold",
-              },
-              em: {
-                ...style,
-                fontStyle: "italic",
-              },
-              codespan: {
-                ...style,
-                fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-                backgroundColor: "rgba(0,0,0,0.1)",
-                paddingHorizontal: 4,
-                paddingVertical: 2,
-                borderRadius: 4,
-              },
-              code: {
-                ...style,
-                fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-                backgroundColor: "rgba(0,0,0,0.1)",
-                padding: 8,
-                borderRadius: 6,
-                marginVertical: 4,
-              },
-              listItem: {
-                ...style,
-                marginVertical: 1,
-              },
-              link: {
-                ...style,
-                color: "#007AFF",
-                textDecorationLine: "underline",
-              },
-              blockquote: {
-                ...style,
-                fontStyle: "italic",
-                borderLeftWidth: 3,
-                borderLeftColor: "#ccc",
-                paddingLeft: 8,
-                marginVertical: 4,
-                backgroundColor: "rgba(0,0,0,0.05)",
-                paddingVertical: 4,
-              },
-            },
-          })
-        : null;
-
-      if (elements && elements.length > 0) {
-        return (
-          <View
-            style={{
-              width: "100%",
-              flexShrink: 1,
-            }}
-          >
-            {elements.map((element: React.ReactNode, index: number) => (
-              <View
-                key={`markdown-${index}`}
-                style={{
-                  width: "100%",
-                }}
-              >
-                {element}
-              </View>
-            ))}
-          </View>
-        );
-      }
-    } catch (error) {
-      // Fallback to plain text if markdown rendering fails
-    }
-
-    return <Text style={style}>{content}</Text>;
-  };
-
-  // Dividiamo il testo in parti e citazioni
-  const renderTextWithCitations = () => {
-    const parts: React.ReactNode[] = [];
-    let currentText = parsedMessage.text;
-    let keyCounter = 0;
-
-    parsedMessage.citations.forEach((citation) => {
-      const placeholder = `◐${citation.id}◑`;
-      const splitIndex = currentText.indexOf(placeholder);
-
-      if (splitIndex !== -1) {
-        // Aggiungiamo il testo prima della citazione
-        if (splitIndex > 0) {
-          parts.push(
-            <MarkdownRenderer
-              key={`text-${keyCounter++}`}
-              content={currentText.substring(0, splitIndex)}
-              style={messageStyle}
-            />
-          );
-        }
-
-        // Aggiungiamo la citazione
-        parts.push(
-          <CitationBubble
-            key={`citation-${citation.id}`}
-            citation={citation}
-            onPress={() => setSelectedCitation(citation)}
-            citationBubbleColor={citationBubbleColor}
-          />
-        );
-
-        // Continuiamo con il resto del testo
-        currentText = currentText.substring(splitIndex + placeholder.length);
-      }
-    });
-
-    // Aggiungiamo il testo rimanente
-    if (currentText) {
-      parts.push(
-        <MarkdownRenderer
-          key={`text-final`}
-          content={currentText}
-          style={messageStyle}
-        />
-      );
-    }
-
-    return parts;
-  };
-
-  return (
-    <View style={styles.messageWithCitations}>
-      <View style={styles.citationTextContainer}>
-        {renderTextWithCitations()}
-      </View>
-
-      <CitationTooltip
-        citation={selectedCitation!}
-        visible={!!selectedCitation}
-        onClose={() => setSelectedCitation(null)}
-        sourceTitle={sourceTooltipTitle}
-        pageText={pageText}
-        ofText={ofText}
-      />
-    </View>
-  );
-};
-
-// Componente per la bubble di loading con three dots
-const LoadingBubble: React.FC<{
-  botMessageStyle?: ViewStyle & TextStyle;
-}> = ({ botMessageStyle }) => {
-  return (
-    <View style={styles.messageContainer}>
-      <View style={styles.botMessageContainer}>
-        <View
-          style={[
-            styles.messageBubble,
-            styles.botMessageBubble,
-            styles.loadingBubble,
-            botMessageStyle, // Usa lo stesso stile delle bubble bot
-          ]}
-        >
-          <LoadingDots
-            style={styles.bubbleLoadingDots}
-            dotStyle={[
-              styles.bubbleLoadingDot,
-              { color: botMessageStyle?.color || "#666" }, // Usa il colore del testo bot
-            ]}
-          />
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// Componente per l'animazione loading dots
-const LoadingDots: React.FC<{ style?: any; dotStyle?: any }> = ({
-  style,
-  dotStyle,
-}) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % 3);
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <View style={[styles.loadingDotsContainer, style]}>
-      {[0, 1, 2].map((index) => (
-        <Text
-          key={index}
-          style={[
-            styles.loadingDot,
-            dotStyle,
-            {
-              opacity: index <= activeIndex ? 1 : 0.3,
-            },
-          ]}
-        >
-          •
-        </Text>
-      ))}
-    </View>
-  );
-};
+// Import components
+import { LoadingBubble } from "./components/Loading";
+import { MessageWithCitations } from "./components/MessageWithCitations";
+import { ChatMessage, LangFlowChatWidgetProps } from "./types";
+import { createDebugLogger, getTriggerButtonPosition } from "./utils";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -505,6 +52,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   startOpen = false,
   debugEnabled = false,
   enableMarkdown = true,
+  markdownFontSize = 13,
   botMessageStyle,
   chatWindowStyle,
   errorMessageStyle,
@@ -535,18 +83,8 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   );
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper functions for conditional logging
-  const debugLog = (...args: any[]) => {
-    if (debugEnabled) {
-      console.log(...args);
-    }
-  };
-
-  const debugError = (...args: any[]) => {
-    if (debugEnabled) {
-      console.error(...args);
-    }
-  };
+  // Create debug loggers
+  const { debugLog, debugError } = createDebugLogger(debugEnabled);
 
   useEffect(() => {
     if (onLoad) {
@@ -669,7 +207,6 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         let fullResponse = "";
-        let buffer = "";
         let lastProcessedLength = 0;
 
         // Set up abort handling
@@ -833,7 +370,6 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     setMessages((prev) => [...prev, userMessage]);
     setInputText("");
     setIsLoading(true);
-    // L'animazione è ora gestita dal useEffect
 
     // Create AbortController for this request
     const controller = new AbortController();
@@ -849,8 +385,8 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     }
 
     let botMessageId: string | null = null;
-    let isAtBottomBeforeResponse = true; // Assume we're at bottom initially
-    let lastScrollTime = 0; // Per limitare la frequenza di scroll
+    let isAtBottomBeforeResponse = true;
+    let lastScrollTime = 0;
 
     // Check if we're at bottom before starting response
     setTimeout(() => {
@@ -899,7 +435,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
             }
           });
         },
-        controller // Pass the AbortController
+        controller
       );
 
       // Final update with complete response (in case streaming missed something)
@@ -927,7 +463,6 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
         if (botMessageId) {
           setMessages((prev) => prev.filter((msg) => msg.id !== botMessageId));
         }
-        // Don't log as error or show error message for user-initiated abort
         return;
       }
 
@@ -961,16 +496,13 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     } finally {
       setIsLoading(false);
       setAbortController(null);
-      // L'animazione è ora gestita dal useEffect
     }
   };
 
   const scrollToBottom = (immediate: boolean = false) => {
     if (immediate) {
-      // Scroll immediato senza animazione
       scrollViewRef.current?.scrollToEnd({ animated: false });
     } else {
-      // Scroll con animazione (default)
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 50);
@@ -1008,7 +540,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       // Calcola se siamo vicini al fondo (threshold più generoso)
       const distanceFromBottom =
         contentHeight - (scrollPosition + containerHeight);
-      const isNearBottom = distanceFromBottom <= 100; // 100px threshold instead of 50px
+      const isNearBottom = distanceFromBottom <= 100;
 
       // Mostra il pulsante solo se:
       // 1. Non siamo vicini al fondo
@@ -1017,10 +549,10 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       const shouldShow =
         !isNearBottom &&
         messages.length > 0 &&
-        contentHeight > containerHeight + 50; // Buffer aggiuntivo
+        contentHeight > containerHeight + 50;
 
       setShowScrollToBottom(shouldShow);
-    }, 100); // 100ms debounce
+    }, 100);
   };
 
   const scrollToBottomPressed = () => {
@@ -1071,33 +603,6 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  const getTriggerButtonPosition = (): ViewStyle => {
-    const baseStyle: ViewStyle = {
-      position: "absolute",
-      zIndex: 1000,
-    };
-
-    switch (chatPosition) {
-      case "top-left":
-        return { ...baseStyle, top: 50, left: 20 };
-      case "top-center":
-        return { ...baseStyle, top: 50, left: screenWidth / 2 - 30 };
-      case "top-right":
-        return { ...baseStyle, top: 50, right: 20 };
-      case "center-left":
-        return { ...baseStyle, top: screenHeight / 2 - 30, left: 20 };
-      case "center-right":
-        return { ...baseStyle, top: screenHeight / 2 - 30, right: 20 };
-      case "bottom-left":
-        return { ...baseStyle, bottom: 50, left: 20 };
-      case "bottom-center":
-        return { ...baseStyle, bottom: 50, left: screenWidth / 2 - 30 };
-      case "bottom-right":
-      default:
-        return { ...baseStyle, bottom: 50, right: 20 };
-    }
-  };
-
   const renderMessage = (message: ChatMessage) => {
     const isUser = message.type === "user";
     const isError = message.type === "error";
@@ -1129,10 +634,8 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
           ]}
         >
           {isUser ? (
-            // Per i messaggi utente, usa solo testo normale senza markdown
             <Text style={messageStyle}>{message.text}</Text>
           ) : (
-            // Per i messaggi bot ed errori, usa il componente con citazioni e markdown
             <MessageWithCitations
               text={message.text}
               messageStyle={messageStyle}
@@ -1140,7 +643,8 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
               pageText={pageText}
               ofText={ofText}
               citationBubbleColor={citationBubbleColor}
-              enableMarkdown={enableMarkdown && !isError} // Disabilita markdown per errori
+              enableMarkdown={enableMarkdown && !isError}
+              markdownFontSize={markdownFontSize}
             />
           )}
         </View>
@@ -1152,7 +656,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     if (triggerComponent) {
       return (
         <TouchableOpacity
-          style={[getTriggerButtonPosition(), triggerButtonStyle]}
+          style={[getTriggerButtonPosition(chatPosition), triggerButtonStyle]}
           onPress={() => setIsModalVisible(true)}
           activeOpacity={0.7}
         >
@@ -1165,14 +669,13 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       <TouchableOpacity
         style={[
           styles.triggerButton,
-          getTriggerButtonPosition(),
+          getTriggerButtonPosition(chatPosition),
           triggerButtonStyle,
         ]}
         onPress={() => setIsModalVisible(true)}
         activeOpacity={0.7}
       >
         <View style={styles.triggerButtonContent}>
-          {/* Chat Icon */}
           <View style={styles.chatIconContainer}>
             <MaterialCommunityIcons
               name="message-text-outline"
@@ -1229,8 +732,6 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Removed status bar for cleaner look */}
-
               {/* Messages */}
               <ScrollView
                 ref={scrollViewRef}
@@ -1243,7 +744,6 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                 {isLoading && (
                   <LoadingBubble botMessageStyle={botMessageStyle} />
                 )}
-                {/* Spacer per permettere scroll completo */}
                 <View style={styles.scrollSpacer} />
               </ScrollView>
 
@@ -1281,7 +781,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                     !inputText.trim() &&
                       !isLoading &&
                       styles.sendButtonDisabled,
-                    isLoading && styles.sendButtonLoading, // Nuovo stile per loading
+                    isLoading && styles.sendButtonLoading,
                   ]}
                   onPress={isLoading ? handleStopGeneration : handleSendMessage}
                   disabled={!inputText.trim() && !isLoading}
@@ -1331,10 +831,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.08)",
-  },
-  triggerButtonText: {
-    fontSize: 28,
-    color: "white",
   },
   modalOverlay: {
     flex: 1,
@@ -1388,16 +884,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.06)",
   },
-  statusContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#e8f5e8",
-  },
-  statusText: {
-    fontSize: 12,
-    color: "#4caf50",
-    textAlign: "center",
-  },
   messagesContainer: {
     flex: 1,
     paddingHorizontal: 24,
@@ -1405,7 +891,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fafbfc",
   },
   messageContainer: {
-    marginVertical: 4, // Ridotto da 6 a 4
+    marginVertical: 4,
   },
   userMessageContainer: {
     alignItems: "flex-end",
@@ -1415,18 +901,18 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: "80%",
-    paddingHorizontal: 16, // Ridotto da 18 a 16
-    paddingVertical: 12, // Ridotto da 14 a 12
-    borderRadius: 20, // Ridotto da 24 a 20
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
     marginVertical: 2,
   },
   userMessageBubble: {
     backgroundColor: "#000000",
-    borderBottomRightRadius: 6, // Ridotto da 8 a 6
+    borderBottomRightRadius: 6,
   },
   botMessageBubble: {
     backgroundColor: "#ffffff",
-    borderBottomLeftRadius: 6, // Ridotto da 8 a 6
+    borderBottomLeftRadius: 6,
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.08)",
   },
@@ -1436,8 +922,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   messageText: {
-    fontSize: 14, // Ridotto da 16 a 14
-    lineHeight: 19, // Ridotto da 22 a 19
+    fontSize: 14,
+    lineHeight: 19,
     fontWeight: "400",
   },
   userMessageText: {
@@ -1486,7 +972,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#e9ecef",
   },
   sendButtonLoading: {
-    backgroundColor: "#4a4a4a", // Dark gray instead of red
+    backgroundColor: "#4a4a4a",
   },
   triggerButtonContent: {
     flexDirection: "row",
@@ -1497,103 +983,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // Aggiungiamo gli stili per le citazioni
-  citationBubble: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 4,
-    marginRight: 4,
-  },
-  citationNumber: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  messageWithCitations: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  citationTextContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-  },
-  tooltipOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tooltipContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 16,
-    maxWidth: "80%",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  tooltipTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 8,
-  },
-  tooltipText: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  tooltipPage: {
-    fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-  },
   scrollSpacer: {
-    height: 100, // Adjust as needed to ensure enough space for the last message
-  },
-  loadingDotsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 20,
-    height: 20,
-  },
-  loadingDot: {
-    fontSize: 16,
-    color: "white",
-    fontWeight: "bold",
-    marginHorizontal: 1,
-    lineHeight: 16,
-  },
-  loadingBubble: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 15,
-    // Rimuovo background e border fissi - userà quelli di botMessageBubble
-  },
-  bubbleLoadingDots: {
-    marginLeft: 4,
-  },
-  bubbleLoadingDot: {
-    fontSize: 16,
-    color: "#666",
-    fontWeight: "bold",
-    marginHorizontal: 1,
-    lineHeight: 16,
+    height: 100,
   },
   scrollToBottomButton: {
     position: "absolute",
-    bottom: 110, // Più spazio dall'input container (era 90)
-    left: "50%", // Centro orizzontale
-    marginLeft: -22, // Metà della larghezza (44/2) per centrare
+    bottom: 110,
+    left: "50%",
+    marginLeft: -22,
     width: 44,
     height: 44,
     borderRadius: 22,

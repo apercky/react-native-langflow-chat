@@ -5,7 +5,7 @@ export type {
   LangFlowChatWidgetProps,
   LangFlowError,
   LangFlowMessage,
-} from "./LangFlowChatWidget";
+} from "./types";
 export { LangFlowChatWidget };
 
 export default LangFlowChatWidget;
