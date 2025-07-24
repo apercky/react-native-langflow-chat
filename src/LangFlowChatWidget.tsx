@@ -76,6 +76,7 @@ export interface LangFlowChatWidgetProps {
   width?: number;
   online?: boolean;
   startOpen?: boolean;
+  debugEnabled?: boolean;
 
   // Styling props - converted to React Native styles
   botMessageStyle?: ViewStyle & TextStyle;
@@ -369,6 +370,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   height,
   width,
   startOpen = false,
+  debugEnabled = false,
   botMessageStyle,
   chatWindowStyle,
   errorMessageStyle,
@@ -394,6 +396,19 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     sessionId ||
       `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
+
+  // Helper functions for conditional logging
+  const debugLog = (...args: any[]) => {
+    if (debugEnabled) {
+      console.log(...args);
+    }
+  };
+
+  const debugError = (...args: any[]) => {
+    if (debugEnabled) {
+      console.error(...args);
+    }
+  };
 
   useEffect(() => {
     if (onLoad) {
@@ -425,7 +440,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       abortController.abort();
       setAbortController(null);
       setIsLoading(false);
-      console.log("🛑 Generation stopped by user");
+      debugLog("🛑 Generation stopped by user");
     }
   };
 
@@ -458,7 +473,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       };
 
       // Debug logging
-      console.log("🚀 LangFlow Streaming Request:", {
+      debugLog("🚀 LangFlow Streaming Request:", {
         url,
         method: "POST",
         headers,
@@ -472,24 +487,24 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
         signal: controller?.signal, // Add abort signal
       });
 
-      console.log("📡 LangFlow Response Status:", response.status);
+      debugLog("📡 LangFlow Response Status:", response.status);
 
       if (!response.ok) {
         // Try to get more details from the error response
         let errorDetails = {};
         try {
           const errorText = await response.text();
-          console.log("❌ LangFlow Error Response Body:", errorText);
+          debugLog("❌ LangFlow Error Response Body:", errorText);
 
           try {
             errorDetails = JSON.parse(errorText);
-            console.log("❌ LangFlow Error Details (JSON):", errorDetails);
+            debugLog("❌ LangFlow Error Details (JSON):", errorDetails);
           } catch {
-            console.log("❌ LangFlow Error Details (Text):", errorText);
+            debugLog("❌ LangFlow Error Details (Text):", errorText);
             errorDetails = { error: errorText };
           }
         } catch (textError) {
-          console.log("❌ Could not read error response body:", textError);
+          debugLog("❌ Could not read error response body:", textError);
         }
 
         throw new Error(
@@ -501,12 +516,12 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
 
       // Check if streaming is available
       if (!response.body) {
-        console.log("⚠️ Response body is null, falling back to text response");
-        console.log("🔄 Using FALLBACK mode - but processing streaming events");
+        debugLog("⚠️ Response body is null, falling back to text response");
+        debugLog("🔄 Using FALLBACK mode - but processing streaming events");
 
         // Fallback to non-streaming response but process streaming events
         const responseText = await response.text();
-        console.log("✅ LangFlow Fallback Response:", responseText);
+        debugLog("✅ LangFlow Fallback Response:", responseText);
 
         // Process streaming events from the text response
         const lines = responseText.split("\n").filter((line) => line.trim());
@@ -517,19 +532,19 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
         for (const line of lines) {
           try {
             const data = JSON.parse(line);
-            console.log("📨 Parsed event:", JSON.stringify(data, null, 2));
+            debugLog("📨 Parsed event:", JSON.stringify(data, null, 2));
 
             // Handle "token" events with streaming chunks
             if (data.event === "token" && data.data && data.data.chunk) {
               const chunkText = data.data.chunk;
-              console.log("💬 Token chunk:", chunkText);
+              debugLog("💬 Token chunk:", chunkText);
 
               if (chunkText) {
                 tokens.push(chunkText);
               }
             }
           } catch (parseError) {
-            console.log("⚠️ Could not parse line as JSON:", line, parseError);
+            debugLog("⚠️ Could not parse line as JSON:", line, parseError);
           }
         }
 
@@ -552,7 +567,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
         fullResponse = tokens.join("");
 
         if (fullResponse) {
-          console.log("💬 Fallback streaming response:", fullResponse);
+          debugLog("💬 Fallback streaming response:", fullResponse);
           return fullResponse;
         } else {
           return fallbackMessage;
@@ -563,19 +578,19 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       const decoder = new TextDecoder();
       let fullResponse = "";
 
-      console.log("🚀 Using STREAMING mode - processing chunks");
+      debugLog("🚀 Using STREAMING mode - processing chunks");
 
       try {
         while (true) {
           const { done, value } = await reader.read();
 
           if (done) {
-            console.log("✅ Stream completed");
+            debugLog("✅ Stream completed");
             break;
           }
 
           const chunk = decoder.decode(value, { stream: true });
-          console.log("📦 Raw chunk:", chunk);
+          debugLog("📦 Raw chunk:", chunk);
 
           // Split by lines since each JSON event is on a separate line
           const lines = chunk.split("\n").filter((line) => line.trim());
@@ -583,12 +598,12 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
           for (const line of lines) {
             try {
               const data = JSON.parse(line);
-              console.log("📨 Parsed event:", JSON.stringify(data, null, 2));
+              debugLog("📨 Parsed event:", JSON.stringify(data, null, 2));
 
               // Handle "token" events with streaming chunks
               if (data.event === "token" && data.data && data.data.chunk) {
                 const chunkText = data.data.chunk;
-                console.log("💬 Token chunk:", chunkText);
+                debugLog("💬 Token chunk:", chunkText);
 
                 if (chunkText) {
                   fullResponse += chunkText;
@@ -601,7 +616,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
               }
               // Handle "end" event with final result
               else if (data.event === "end" && data.data && data.data.result) {
-                console.log("🏁 Stream ended with final result");
+                debugLog("🏁 Stream ended with final result");
                 const result = data.data.result;
 
                 // Extract final message from the end event
@@ -613,7 +628,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
                       const finalMessage =
                         firstOutput.results.message.text ||
                         firstOutput.results.message;
-                      console.log(
+                      debugLog(
                         "📝 Final message from end event:",
                         finalMessage
                       );
@@ -630,10 +645,10 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
               }
               // Handle "add_message" events (optional, mainly for logging)
               else if (data.event === "add_message") {
-                console.log("📨 Message added:", data.data.text);
+                debugLog("📨 Message added:", data.data.text);
               }
             } catch (parseError) {
-              console.log("⚠️ Could not parse line as JSON:", line, parseError);
+              debugLog("⚠️ Could not parse line as JSON:", line, parseError);
             }
           }
         }
@@ -642,24 +657,24 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       }
 
       if (!fullResponse) {
-        console.log("⚠️ No response content found, using fallback");
-        console.log("⚠️ fullResponse length:", fullResponse.length);
-        console.log("⚠️ fullResponse value:", JSON.stringify(fullResponse));
+        debugLog("⚠️ No response content found, using fallback");
+        debugLog("⚠️ fullResponse length:", fullResponse.length);
+        debugLog("⚠️ fullResponse value:", JSON.stringify(fullResponse));
         fullResponse = fallbackMessage;
       }
 
-      console.log("💬 Final complete response:", fullResponse);
-      console.log("💬 Final response length:", fullResponse.length);
+      debugLog("💬 Final complete response:", fullResponse);
+      debugLog("💬 Final response length:", fullResponse.length);
       return fullResponse;
     } catch (error) {
       // Handle AbortError separately to avoid logging as error
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("🛑 Stream request was aborted");
+        debugLog("🛑 Stream request was aborted");
         throw error; // Re-throw to be handled by caller
       }
 
-      console.error("💥 LangFlow Streaming API Error:", error);
-      console.error(
+      debugError("💥 LangFlow Streaming API Error:", error);
+      debugError(
         "💥 Error Stack:",
         error instanceof Error ? error.stack : "No stack trace"
       );
@@ -743,7 +758,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     } catch (error) {
       // Check if it was aborted by user
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("🛑 Request was aborted by user");
+        debugLog("🛑 Request was aborted by user");
         // Remove the bot message if it was created
         if (botMessageId) {
           setMessages((prev) => prev.filter((msg) => msg.id !== botMessageId));
@@ -767,8 +782,8 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       setMessages((prev) => [...prev, errorMessageObj]);
 
       // Log and notify parent component only for real errors
-      console.error("💥 LangFlow Streaming API Error:", error);
-      console.error(
+      debugError("💥 LangFlow Streaming API Error:", error);
+      debugError(
         "💥 Error Stack:",
         error instanceof Error ? error.stack : "No stack trace"
       );

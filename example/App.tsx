@@ -94,6 +94,7 @@ export default function App() {
         placeholderSending="Sending..."
         chatPosition="bottom-right"
         citationBubbleColor="#4a4a4a" // Dark gray citation bubbles
+        debugEnabled={__DEV__} // Enable debug logs in development
         // Event handlers
         onMessage={handleMessage}
         onError={handleError}

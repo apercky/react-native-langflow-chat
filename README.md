@@ -109,6 +109,7 @@ const CustomChatIcon = () => (
   onMessage={(message) => console.log('Message:', message)}
   onError={(error) => console.error('Error:', error)}
   onLoad={() => console.log('Widget loaded')}
+  debugEnabled={__DEV__} // Enable logs in development only
 />
 ```
 
@@ -192,14 +193,15 @@ The component supports full localization with customizable text strings:
 | `ofText` | `string` | `"of"` | Text for "X of Y" in citations |
 | `closeButtonAriaLabel` | `string` | `"Close"` | Accessibility label for close button |
 
-### Layout & Behavior
+### Behavior Configuration
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `chatPosition` | `ChatPosition` | `"bottom-right"` | Trigger button position (see positions below) |
+| `chatPosition` | `ChatPosition` | `"bottom-right"` | Position of the chat trigger button |
 | `height` | `number` | `screenHeight * 0.9` | Chat modal height in pixels |
 | `width` | `number` | `screenWidth * 0.9` | Chat modal width in pixels |
 | `startOpen` | `boolean` | `false` | Whether to start with chat modal open |
+| `debugEnabled` | `boolean` | `false` | Enable debug console logs for development |
 
 ### Custom Trigger Button
 
