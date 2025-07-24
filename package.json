@@ -1,0 +1,83 @@
+{
+  "name": "react-native-langflow-chat",
+  "version": "1.0.0",
+  "description": "A React Native component for integrating LangFlow chat widget using WebView with cross-platform support for Electron and iOS applications",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rimraf lib",
+    "prebuild": "npm run clean",
+    "prepare": "npm run build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix"
+  },
+  "keywords": [
+    "react-native",
+    "langflow",
+    "chat",
+    "webview",
+    "ai",
+    "chatbot",
+    "cross-platform",
+    "electron",
+    "ios"
+  ],
+  "author": "Antonio Perchinumio",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apercky/react-native-langflow-chat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/apercky/react-native-langflow-chat/issues"
+  },
+  "homepage": "https://github.com/apercky/react-native-langflow-chat#readme",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.70.0",
+    "react-native-webview": ">=13.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-native": "^0.70.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-native": "^4.0.0",
+    "jest": "^29.6.0",
+    "react": "18.2.0",
+    "react-native": "0.72.6",
+    "react-native-webview": "^13.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.1.0"
+  },
+  "jest": {
+    "preset": "react-native",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  },
+  "react-native": "src/index.tsx",
+  "publishConfig": {
+    "access": "public"
+  },
+  "resolutions": {
+    "@types/react": "^18.0.0",
+    "@types/react-native": "^0.70.0"
+  }
+}
