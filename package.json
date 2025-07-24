@@ -1,6 +1,6 @@
 {
   "name": "react-native-langflow-chat",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A native React Native component for integrating LangFlow chat with streaming support, citation bubbles, react-native-marked rendering, and customizable UI",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
