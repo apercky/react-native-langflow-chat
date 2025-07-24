@@ -238,7 +238,7 @@ The component supports full localization with customizable text strings:
 
 The `chatPosition` prop accepts one of these 9 values:
 
-```
+```txt
 "top-left"      "top-center"      "top-right"
 "center-left"                     "center-right"  
 "bottom-left"   "bottom-center"   "bottom-right"
@@ -290,7 +290,7 @@ To use this component, you need:
 
 The component communicates with LangFlow using the standard REST API:
 
-```
+```bash
 POST /api/v1/run/{flow_id}
 Headers: {
   "Content-Type": "application/json",
@@ -342,11 +342,13 @@ Enable debugging by monitoring console logs for:
 If you encounter Metro bundler errors after installing this package, it's usually due to dependency conflicts. Follow these steps:
 
 1. **Check peer dependencies**: Make sure you have all required peer dependencies installed:
+
    ```bash
    npm install react react-native @expo/vector-icons
    ```
 
 2. **Clear caches**: Clear all Metro and Node caches:
+
    ```bash
    # For Expo
    npx expo start --clear
