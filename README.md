@@ -335,6 +335,39 @@ Enable debugging by monitoring console logs for:
 - ✅ **Expo** - Full Expo compatibility
 - ✅ **React Native CLI** - Standard RN projects
 
+## Troubleshooting
+
+### Installation Issues
+
+If you encounter Metro bundler errors after installing this package, it's usually due to dependency conflicts. Follow these steps:
+
+1. **Check peer dependencies**: Make sure you have all required peer dependencies installed:
+   ```bash
+   npm install react react-native @expo/vector-icons
+   ```
+
+2. **Clear caches**: Clear all Metro and Node caches:
+   ```bash
+   # For Expo
+   npx expo start --clear
+   
+   # For React Native CLI
+   npx react-native start --reset-cache
+   
+   # Clear node_modules
+   rm -rf node_modules package-lock.json yarn.lock
+   npm install
+   ```
+
+3. **Check versions**: Ensure compatible versions of React Native (>=0.70.0) and React (>=18.0.0)
+
+### Common Errors
+
+- **`Cannot find module 'metro/src/ModuleGraph/worker/importLocationsPlugin'`**: This indicates a Metro version conflict. Clear caches and reinstall dependencies.
+- **`@expo/vector-icons not found`**: Install the required peer dependency with `npx expo install @expo/vector-icons`
+
+For more detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
