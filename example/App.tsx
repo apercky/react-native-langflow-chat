@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import LangFlowChatWidget, { LangFlowError, LangFlowMessage } from "./src";
 
@@ -17,6 +18,8 @@ const CustomChatIcon = () => (
 );
 
 export default function App() {
+  const { width, height } = useWindowDimensions();
+
   const handleMessage = (message: LangFlowMessage) => {
     console.log("Message received:", message);
   };
@@ -111,29 +114,9 @@ export default function App() {
         onError={handleError}
         onLoad={handleLoad}
         onModalVisibilityChange={handleModalVisibilityChange}
+        width={width * 0.95} // Larghezza personalizzata (default: 90% dello schermo)
+        height={height * 0.84} // Altezza personalizzata (default: 90% dello schermo)
       />
-
-      {/* Example with custom trigger component */}
-      {/* Uncomment to test custom trigger */}
-      {/*
-      <LangFlowChatWidget
-        flowId="your-flow-id-here"
-        hostUrl="https://your-langflow-host.com"
-        apiKey="your-api-key"
-        windowTitle="Custom Bot"
-        chatPosition="bottom-left"
-        triggerComponent={<CustomChatIcon />}
-        triggerButtonStyle={{
-          backgroundColor: "transparent",
-          elevation: 0,
-          shadowOpacity: 0,
-        }}
-        onMessage={handleMessage}
-        onError={handleError}
-        onLoad={handleLoad}
-        onModalVisibilityChange={handleModalVisibilityChange}
-      />
-      */}
     </SafeAreaView>
   );
 }

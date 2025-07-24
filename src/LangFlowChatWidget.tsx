@@ -721,7 +721,9 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
               style={[
                 styles.chatContainer,
                 {
+                  maxWidth: modalWidth,
                   width: modalWidth,
+                  maxHeight: modalHeight,
                   height: modalHeight,
                 },
                 chatWindowStyle,
@@ -866,9 +868,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 20,
     width: "100%",
-    maxWidth: 500,
+    maxWidth: "98%",
     flex: 1,
-    maxHeight: "90%",
+    maxHeight: "98%",
   },
   chatHeader: {
     flexDirection: "row",
