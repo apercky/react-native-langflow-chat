@@ -65,6 +65,7 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
   onMessage,
   onError,
   onLoad,
+  onModalVisibilityChange,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(startOpen);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -90,6 +91,13 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
       onLoad();
     }
   }, [onLoad]);
+
+  // Notifica i cambiamenti di visibilità della modale
+  useEffect(() => {
+    if (onModalVisibilityChange) {
+      onModalVisibilityChange(isModalVisible);
+    }
+  }, [isModalVisible, onModalVisibilityChange]);
 
   // Anima il pulsante quando cambia lo stato di loading
   useEffect(() => {

@@ -30,6 +30,15 @@ export default function App() {
     console.log("Chat widget loaded successfully");
   };
 
+  const handleModalVisibilityChange = (isVisible: boolean) => {
+    console.log("Modal visibility changed:", isVisible ? "OPENED" : "CLOSED");
+    // Qui puoi:
+    // - Aggiornare lo stato della tua app
+    // - Pausare/riprendere animazioni
+    // - Tracciare analytics
+    // - Modificare altri elementi UI
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
@@ -101,6 +110,7 @@ export default function App() {
         onMessage={handleMessage}
         onError={handleError}
         onLoad={handleLoad}
+        onModalVisibilityChange={handleModalVisibilityChange}
       />
 
       {/* Example with custom trigger component */}
@@ -121,6 +131,7 @@ export default function App() {
         onMessage={handleMessage}
         onError={handleError}
         onLoad={handleLoad}
+        onModalVisibilityChange={handleModalVisibilityChange}
       />
       */}
     </SafeAreaView>

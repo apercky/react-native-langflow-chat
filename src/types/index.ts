@@ -82,6 +82,7 @@ export interface LangFlowChatWidgetProps {
   onMessage?: (message: LangFlowMessage) => void;
   onError?: (error: LangFlowError) => void;
   onLoad?: () => void;
+  onModalVisibilityChange?: (isVisible: boolean) => void;
 }
 
 export interface ChatMessage {
