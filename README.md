@@ -30,14 +30,15 @@ A **native React Native component** for integrating LangFlow chat functionality 
 ## 🚀 Installation
 
 ```bash
-npm install react-native-langflow-chat @expo/vector-icons react-native-marked react-native-svg
+npm install react-native-langflow-chat @expo/vector-icons expo-clipboard react-native-marked react-native-svg
 # or
-yarn add react-native-langflow-chat @expo/vector-icons react-native-marked react-native-svg
+yarn add react-native-langflow-chat @expo/vector-icons expo-clipboard react-native-marked react-native-svg
 ```
 
 ### Required Dependencies
 
 - **`@expo/vector-icons`**: For UI icons (chat button, close button, etc.)
+- **`expo-clipboard`**: For copy-to-clipboard functionality (cross-platform)
 - **`react-native-marked`**: For markdown rendering in bot messages
 - **`react-native-svg`**: Required by react-native-marked for SVG elements
 

@@ -5,14 +5,15 @@
 Install the main package and all required dependencies:
 
 ```bash
-npm install react-native-langflow-chat @expo/vector-icons react-native-marked react-native-svg
+npm install react-native-langflow-chat @expo/vector-icons expo-clipboard react-native-marked react-native-svg
 # or
-yarn add react-native-langflow-chat @expo/vector-icons react-native-marked react-native-svg
+yarn add react-native-langflow-chat @expo/vector-icons expo-clipboard react-native-marked react-native-svg
 ```
 
 ### Dependencies Explained
 
 - **`@expo/vector-icons`**: Material Community Icons for UI elements (chat button, close button, etc.)
+- **`expo-clipboard`**: Cross-platform clipboard functionality for copy-to-clipboard feature
 - **`react-native-marked`**: Native markdown rendering optimized for React Native
 - **`react-native-svg`**: SVG support required by react-native-marked
 

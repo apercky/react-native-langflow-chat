@@ -25,65 +25,66 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   fontSize,
   enableMarkdown = true,
 }) => {
-  if (!enableMarkdown || !useMarkdown) {
-    // Anche il testo normale deve usare fontSize per coerenza
+  // Disable markdown on web to avoid compatibility issues
+  if (!enableMarkdown || !useMarkdown || Platform.OS === "web") {
     return <Text style={[style, { fontSize: fontSize }]}>{content}</Text>;
   }
 
   try {
-    // Crea uno stile base con il fontSize per assicurare consistenza
+    // Create safe base text style for React Native only
     const baseTextStyle = {
-      ...style,
       fontSize: fontSize,
+      color: style?.color || "#2c2c2c",
+      fontWeight: "400" as const,
     };
 
-    // Usa useMarkdown hook invece del componente per evitare VirtualizedLists nested
+    // Use useMarkdown hook with safer styles
     const elements = useMarkdown(content, {
       styles: {
-        // Stile di default per tutto il testo
+        // Basic text styles
         text: baseTextStyle,
         body: baseTextStyle,
         root: baseTextStyle,
 
-        // Headings proporzionali al fontSize
+        // Headings with safe properties
         heading1: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize + 8, 18),
-          fontWeight: "bold",
+          fontWeight: "bold" as const,
           marginVertical: 4,
         },
         heading2: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize + 5, 16),
-          fontWeight: "bold",
+          fontWeight: "bold" as const,
           marginVertical: 3,
         },
         heading3: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize + 3, 15),
-          fontWeight: "bold",
+          fontWeight: "bold" as const,
           marginVertical: 2,
         },
 
-        // Paragrafi con dimensione base
+        // Paragraphs
         paragraph: {
           ...baseTextStyle,
           marginVertical: 2,
         },
 
-        // Testo in grassetto - mantiene la dimensione base
+        // Bold text
         strong: {
           ...baseTextStyle,
-          fontWeight: "bold",
+          fontWeight: "bold" as const,
         },
 
-        // Testo in corsivo - mantiene la dimensione base
+        // Italic text
         em: {
           ...baseTextStyle,
-          fontStyle: "italic",
+          fontStyle: "italic" as const,
         },
 
-        // Codice inline - leggermente più piccolo
+        // Inline code with safe properties
         codespan: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize - 1, 11),
@@ -94,7 +95,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           borderRadius: 4,
         },
 
-        // Blocchi di codice - leggermente più piccoli
+        // Code blocks
         code: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize - 1, 11),
@@ -105,23 +106,23 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           marginVertical: 4,
         },
 
-        // Elementi di lista - dimensione base
+        // List items
         listItem: {
           ...baseTextStyle,
           marginVertical: 1,
         },
 
-        // Link - dimensione base
+        // Links
         link: {
           ...baseTextStyle,
           color: "#007AFF",
-          textDecorationLine: "underline",
+          textDecorationLine: "underline" as const,
         },
 
-        // Citazioni - dimensione base
+        // Blockquotes
         blockquote: {
           ...baseTextStyle,
-          fontStyle: "italic",
+          fontStyle: "italic" as const,
           borderLeftWidth: 3,
           borderLeftColor: "#ccc",
           paddingLeft: 8,
@@ -134,19 +135,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
     if (elements && elements.length > 0) {
       return (
-        <View
-          style={{
-            width: "100%",
-            flexShrink: 1,
-          }}
-        >
+        <View style={{ width: "100%", flexShrink: 1 }}>
           {elements.map((element: React.ReactNode, index: number) => (
-            <View
-              key={`markdown-${index}`}
-              style={{
-                width: "100%",
-              }}
-            >
+            <View key={`markdown-${index}`} style={{ width: "100%" }}>
               {element}
             </View>
           ))}
@@ -155,9 +146,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     }
   } catch (error) {
     // Fallback to plain text if markdown rendering fails
+    console.warn("MarkdownRenderer error:", error);
   }
 
-  // Fallback finale con dimensione coerente
+  // Final fallback
   return <Text style={[style, { fontSize: fontSize }]}>{content}</Text>;
 };
 

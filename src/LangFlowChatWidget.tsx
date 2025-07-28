@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Clipboard,
   Dimensions,
   KeyboardAvoidingView,
   Modal,
@@ -15,6 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+// Import expo-clipboard for cross-platform support
+import * as Clipboard from "expo-clipboard";
 
 // Import components
 import { LoadingBubble } from "./components/Loading";
@@ -607,9 +609,16 @@ const LangFlowChatWidget: React.FC<LangFlowChatWidgetProps> = ({
     });
   };
 
-  const handleCopyMessage = (text: string) => {
-    Clipboard.setString(text);
-    debugLog("📋 Message copied to clipboard:", text.substring(0, 50) + "...");
+  const handleCopyMessage = async (text: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      debugLog(
+        "📋 Message copied to clipboard:",
+        text.substring(0, 50) + "..."
+      );
+    } catch (error) {
+      debugLog("❌ Failed to copy to clipboard:", error);
+    }
   };
 
   useEffect(() => {

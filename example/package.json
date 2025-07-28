@@ -11,14 +11,18 @@
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
     "expo": "~51.0.28",
+    "expo-clipboard": "~6.0.3",
     "expo-status-bar": "~1.12.1",
     "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-native": "0.74.5",
     "react-native-marked": "^7.0.2",
-    "react-native-svg": "^15.12.0"
+    "react-native-svg": "^15.12.0",
+    "react-native-web": "~0.19.10"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@expo/metro-runtime": "^5.0.4",
     "@types/react": "~18.2.45",
     "typescript": "^5.1.3"
   },

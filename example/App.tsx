@@ -93,12 +93,12 @@ export default function App() {
 
       {/* Default Chat Widget */}
       <LangFlowChatWidget
-        flowId="fd8ae07f-3275-4673-95d7-d2b2c7341d9b" // Replace with your actual flow ID
-        hostUrl="http://localhost:7860" // Replace with your actual host URL
-        apiKey="sk-s6KmIeymVzrpOlkiSEwH1Lqv_9Vvciz_ilWoTmimr30" // Replace with your actual API key
+        flowId="c8b0d41d-f984-4dc9-8503-7efa84ca9133" // Replace with your actual flow ID
+        hostUrl="https://api.dev.documinds.net/lf/" // Replace with your actual host URL
+        apiKey="sk-AE3rxdN6X3__mUszoYdn2lSV6XPMqgik8ue5XSF6VU0" // Replace with your actual API key
         tweaks={{
           Qdrant: {
-            collection_name: "onestore",
+            collection_name: "onestore-diesel",
           },
         }}
         windowTitle="User Guide"
