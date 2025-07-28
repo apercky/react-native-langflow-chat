@@ -1,22 +1,22 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { Citation, CitationBubble, CitationTooltip } from "./Citation";
+import { Citation, CitationTooltip } from "./Citation";
 import MarkdownRenderer from "./MarkdownRenderer";
 
-// Interfacce per le citazioni
+// Interface for citations
 export interface ParsedMessage {
   text: string;
   citations: Citation[];
 }
 
-// Funzione per parsare i messaggi e estrarre le citazioni
+// Function to parse messages and extract citations
 export const parseMessageWithCitations = (text: string): ParsedMessage => {
   const citationRegex =
     /\[src name="([^"]+)" page="([^"]+)" total_pages="([^"]+)"\]/g;
   const citations: Citation[] = [];
   let citationCounter = 1;
 
-  // Sostituiamo ogni citazione con un placeholder numerato
+  // Replace each citation with a numbered placeholder
   const parsedText = text.replace(
     citationRegex,
     (match, src, page, total_pages) => {
@@ -28,14 +28,14 @@ export const parseMessageWithCitations = (text: string): ParsedMessage => {
         displayText: `${src} - Page ${page}/${total_pages}`,
       };
       citations.push(citation);
-      return `◐${citationCounter++}◑`; // Placeholder temporaneo
+      return `◐${citationCounter++}◑`; // Temporary placeholder
     }
   );
 
   return { text: parsedText, citations };
 };
 
-// Componente principale per renderizzare il testo con citazioni
+// Main component to render text with citations
 export const MessageWithCitations: React.FC<{
   text: string;
   messageStyle: any;
@@ -60,67 +60,17 @@ export const MessageWithCitations: React.FC<{
   );
   const parsedMessage = parseMessageWithCitations(text);
 
-  // Dividiamo il testo in parti e citazioni
-  const renderTextWithCitations = () => {
-    const parts: React.ReactNode[] = [];
-    let currentText = parsedMessage.text;
-    let keyCounter = 0;
-
-    parsedMessage.citations.forEach((citation) => {
-      const placeholder = `◐${citation.id}◑`;
-      const splitIndex = currentText.indexOf(placeholder);
-
-      if (splitIndex !== -1) {
-        // Aggiungiamo il testo prima della citazione
-        if (splitIndex > 0) {
-          parts.push(
-            <MarkdownRenderer
-              key={`text-${keyCounter++}`}
-              content={currentText.substring(0, splitIndex)}
-              style={messageStyle}
-              fontSize={fontSize}
-              enableMarkdown={enableMarkdown}
-            />
-          );
-        }
-
-        // Aggiungiamo la citazione
-        parts.push(
-          <CitationBubble
-            key={`citation-${citation.id}`}
-            citation={citation}
-            onPress={() => setSelectedCitation(citation)}
-            citationBubbleColor={citationBubbleColor}
-            fontSize={fontSize}
-          />
-        );
-
-        // Continuiamo con il resto del testo
-        currentText = currentText.substring(splitIndex + placeholder.length);
-      }
-    });
-
-    // Aggiungiamo il testo rimanente
-    if (currentText) {
-      parts.push(
-        <MarkdownRenderer
-          key={`text-final`}
-          content={currentText}
-          style={messageStyle}
-          fontSize={fontSize}
-          enableMarkdown={enableMarkdown}
-        />
-      );
-    }
-
-    return parts;
-  };
-
   return (
     <View style={styles.messageWithCitations}>
-      <View style={styles.citationTextContainer}>
-        {renderTextWithCitations()}
-      </View>
+      <MarkdownRenderer
+        content={parsedMessage.text}
+        style={messageStyle}
+        fontSize={fontSize}
+        enableMarkdown={enableMarkdown}
+        citations={parsedMessage.citations}
+        onCitationPress={setSelectedCitation}
+        citationBubbleColor={citationBubbleColor}
+      />
 
       <CitationTooltip
         citation={selectedCitation!}
@@ -136,12 +86,7 @@ export const MessageWithCitations: React.FC<{
 
 const styles = StyleSheet.create({
   messageWithCitations: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  citationTextContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
+    flexDirection: "column",
+    width: "100%",
   },
 });
