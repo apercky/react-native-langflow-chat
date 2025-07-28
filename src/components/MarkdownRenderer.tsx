@@ -1,16 +1,6 @@
-import React from "react";
+import React, { ReactElement } from "react";
 import { Platform, Text, View } from "react-native";
-
-// Optional markdown support - only import if available
-let ReactNativeMarked: any = null;
-let useMarkdown: any = null;
-try {
-  const marked = require("react-native-marked");
-  ReactNativeMarked = marked.default;
-  useMarkdown = marked.useMarkdown;
-} catch (error) {
-  // react-native-marked not available, will use plain text
-}
+import { useMarkdown } from "react-native-marked";
 
 interface MarkdownRendererProps {
   content: string;
@@ -26,7 +16,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   enableMarkdown = true,
 }) => {
   // Disable markdown on web to avoid compatibility issues
-  if (!enableMarkdown || !useMarkdown || Platform.OS === "web") {
+  if (!enableMarkdown) {
     return <Text style={[style, { fontSize: fontSize }]}>{content}</Text>;
   }
 
@@ -35,31 +25,32 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     const baseTextStyle = {
       fontSize: fontSize,
       color: style?.color || "#2c2c2c",
-      fontWeight: "400" as const,
+      fontWeight: "300" as const,
+      lineHeight: fontSize * 1.4,
     };
 
     // Use useMarkdown hook with safer styles
     const elements = useMarkdown(content, {
       styles: {
         // Basic text styles
-        text: baseTextStyle,
-        body: baseTextStyle,
-        root: baseTextStyle,
+        text: {
+          ...baseTextStyle,
+        },
 
         // Headings with safe properties
-        heading1: {
+        h1: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize + 8, 18),
           fontWeight: "bold" as const,
           marginVertical: 4,
         },
-        heading2: {
+        h2: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize + 5, 16),
           fontWeight: "bold" as const,
           marginVertical: 3,
         },
-        heading3: {
+        h3: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize + 3, 15),
           fontWeight: "bold" as const,
@@ -69,19 +60,21 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         // Paragraphs
         paragraph: {
           ...baseTextStyle,
-          marginVertical: 2,
+          overflow: "hidden",
         },
 
         // Bold text
         strong: {
           ...baseTextStyle,
           fontWeight: "bold" as const,
+          overflow: "hidden",
         },
 
         // Italic text
         em: {
           ...baseTextStyle,
           fontStyle: "italic" as const,
+          overflow: "hidden",
         },
 
         // Inline code with safe properties
@@ -93,23 +86,33 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           paddingHorizontal: 4,
           paddingVertical: 2,
           borderRadius: 4,
+          overflow: "hidden",
         },
 
         // Code blocks
         code: {
           ...baseTextStyle,
-          fontSize: Math.max(fontSize - 1, 11),
-          fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
           backgroundColor: "rgba(0,0,0,0.1)",
           padding: 8,
           borderRadius: 6,
           marginVertical: 4,
+          overflow: "hidden",
         },
 
         // List items
-        listItem: {
+        li: {
           ...baseTextStyle,
-          marginVertical: 1,
+          fontSize: Math.max(fontSize, 10),
+          fontWeight: "normal" as const,
+          marginVertical: 0,
+          overflow: "hidden",
+        },
+
+        list: {
+          ...baseTextStyle,
+          left: 0,
+          overflow: "hidden",
+          marginVertical: 0,
         },
 
         // Links
@@ -117,12 +120,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           ...baseTextStyle,
           color: "#007AFF",
           textDecorationLine: "underline" as const,
+          overflow: "hidden",
         },
 
         // Blockquotes
         blockquote: {
           ...baseTextStyle,
-          fontStyle: "italic" as const,
           borderLeftWidth: 3,
           borderLeftColor: "#ccc",
           paddingLeft: 8,
@@ -134,10 +137,30 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     });
 
     if (elements && elements.length > 0) {
+      // Cast elements to ReactElement[] to ensure type safety
+      const safeElements = elements.map((element) => element as ReactElement);
+
+      // Go back to using View-based rendering but with better styling
       return (
-        <View style={{ width: "100%", flexShrink: 1 }}>
-          {elements.map((element: React.ReactNode, index: number) => (
-            <View key={`markdown-${index}`} style={{ width: "100%" }}>
+        <View
+          style={{
+            width: "85%",
+            marginTop: 0,
+            paddingTop: 0,
+            marginBottom: 0,
+            paddingBottom: 0,
+          }}
+        >
+          {safeElements.map((element, index) => (
+            <View
+              key={`markdown-${index}`}
+              style={{
+                marginTop: 14,
+                paddingTop: 0,
+                marginBottom: 0,
+                paddingBottom: 0,
+              }}
+            >
               {element}
             </View>
           ))}
