@@ -1,7 +1,14 @@
-import React from "react";
-import { Platform, Text, TextStyle, View } from "react-native";
-import { useMarkdown } from "react-native-marked";
-import { Citation, CitationBubble } from "./Citation";
+import React, { ReactNode } from "react";
+import {
+  Platform,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import type { RendererInterface } from "react-native-marked";
+import { Renderer, useMarkdown } from "react-native-marked";
+import { Citation } from "./Citation";
 
 interface MarkdownRendererProps {
   content: string;
@@ -13,6 +20,78 @@ interface MarkdownRendererProps {
   citationBubbleColor?: string;
 }
 
+class CustomRenderer extends Renderer implements RendererInterface {
+  private citations: Citation[];
+  private onCitationPress?: (citation: Citation) => void;
+  private citationBubbleColor: string;
+  private fontSize: number;
+
+  constructor(
+    citations: Citation[] = [],
+    onCitationPress?: (citation: Citation) => void,
+    citationBubbleColor: string = "#4a4a4a",
+    fontSize: number = 14
+  ) {
+    super();
+    this.citations = citations;
+    this.onCitationPress = onCitationPress;
+    this.citationBubbleColor = citationBubbleColor;
+    this.fontSize = fontSize;
+  }
+
+  // Sovrascrivo solo il metodo link per gestire le citazioni
+  link(
+    children: string | ReactNode[],
+    href: string,
+    styles?: TextStyle
+  ): ReactNode {
+    // Se è un link di citazione, renderizza come CitationBubble
+    if (href && href.startsWith("citation://")) {
+      const citationId = href.replace("citation://", "");
+      const citation = this.citations.find(
+        (c) => c.id.toString() === citationId
+      );
+
+      if (citation) {
+        return (
+          <TouchableOpacity
+            key={this.getKey()}
+            onPress={() =>
+              this.onCitationPress && this.onCitationPress(citation)
+            }
+            style={{
+              backgroundColor: this.citationBubbleColor,
+              width: Math.max(this.fontSize + 2, 16),
+              height: Math.max(this.fontSize + 2, 16),
+              borderRadius: Math.max(this.fontSize + 2, 16) / 2,
+              justifyContent: "center",
+              alignItems: "center",
+              marginHorizontal: 1,
+              marginTop: -2,
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontSize: Math.max(this.fontSize - 4, 8),
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              {citation.id}
+            </Text>
+          </TouchableOpacity>
+        );
+      }
+    }
+
+    // Per tutti gli altri link, usa il comportamento di default della classe padre
+    return super.link(children, href, styles);
+  }
+}
+
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   style,
@@ -22,129 +101,48 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   onCitationPress,
   citationBubbleColor = "#4a4a4a",
 }) => {
-  // Disable markdown on web to avoid compatibility issues
   if (!enableMarkdown) {
     return <Text style={[style, { fontSize: fontSize }]}>{content}</Text>;
   }
 
-  // Metodo semplificato per gestire le citazioni direttamente
+  // Trasformiamo i placeholder delle citazioni in link markdown
+  let processedContent = content;
   if (citations && citations.length > 0) {
-    const hasCitationPlaceholders = citations.some((citation) =>
-      content.includes(`◐${citation.id}◑`)
-    );
-
-    if (hasCitationPlaceholders) {
-      // Approccio diretto senza usare markdown per il contenuto con citazioni
-      // Tratta ogni paragrafo separatamente
-      const paragraphs = content.split("\n\n");
-      const renderedParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
-        // Se il paragrafo non contiene citazioni, renderizzalo normalmente
-        if (
-          !citations.some((citation) => paragraph.includes(`◐${citation.id}◑`))
-        ) {
-          return (
-            <Text key={`para-${paragraphIndex}`} style={style}>
-              {paragraph}
-            </Text>
-          );
-        }
-
-        // Altrimenti, processa le citazioni nel paragrafo
-        let currentText = paragraph;
-        const parts: React.ReactNode[] = [];
-        let lastIndex = 0;
-
-        // Ordina le citazioni per posizione
-        const citationPositions = citations
-          .map((citation) => {
-            const placeholder = `◐${citation.id}◑`;
-            const index = currentText.indexOf(placeholder);
-            return { citation, index, placeholder };
-          })
-          .filter((item) => item.index !== -1)
-          .sort((a, b) => a.index - b.index);
-
-        if (citationPositions.length === 0) {
-          // Non ci sono citazioni in questo paragrafo
-          return (
-            <Text key={`para-${paragraphIndex}`} style={style}>
-              {paragraph}
-            </Text>
-          );
-        }
-
-        // Processa ogni citazione in questo paragrafo
-        citationPositions.forEach(({ citation, index, placeholder }) => {
-          if (index > lastIndex) {
-            // Aggiungi testo prima della citazione
-            parts.push(currentText.substring(lastIndex, index));
-          }
-
-          // Aggiungi la bolla della citazione (inline)
-          parts.push(
-            <CitationBubble
-              key={`citation-${paragraphIndex}-${citation.id}`}
-              citation={citation}
-              onPress={() => onCitationPress && onCitationPress(citation)}
-              citationBubbleColor={citationBubbleColor}
-              fontSize={fontSize}
-            />
-          );
-
-          lastIndex = index + placeholder.length;
-        });
-
-        // Aggiungi il testo rimanente
-        if (lastIndex < currentText.length) {
-          parts.push(currentText.substring(lastIndex));
-        }
-
-        // Renderizza l'intero paragrafo come un unico elemento Text
-        // Questo è cruciale per mantenere tutto sulla stessa riga
-        return (
-          <Text key={`para-${paragraphIndex}`} style={style}>
-            {parts}
-          </Text>
+    citations.forEach((citation) => {
+      const placeholder = `◐${citation.id}◑`;
+      if (processedContent.includes(placeholder)) {
+        processedContent = processedContent.replace(
+          placeholder,
+          `[${citation.id}](citation://${citation.id})`
         );
-      });
-
-      // Renderizza tutti i paragrafi
-      return (
-        <View style={{ width: "100%" }}>
-          {renderedParagraphs.map((paragraph, index) => (
-            <View
-              key={`paragraph-container-${index}`}
-              style={{
-                marginTop: index > 0 ? 14 : 0,
-                marginBottom: 0,
-              }}
-            >
-              {paragraph}
-            </View>
-          ))}
-        </View>
-      );
-    }
+      }
+    });
   }
 
-  try {
-    // Create safe base text style for React Native only
-    const baseTextStyle: TextStyle = {
-      fontSize: fontSize,
-      color: style?.color || "#2c2c2c",
-      fontWeight: "300",
-      lineHeight: fontSize * 1.4,
-    };
+  const baseTextStyle: TextStyle = {
+    fontSize: fontSize,
+    color: style?.color || "#2c2c2c",
+    fontWeight: "300",
+    lineHeight: fontSize * 1.4,
+  };
 
-    // Use useMarkdown hook with safer styles
-    const elements = useMarkdown(content, {
+  try {
+    const renderer = new CustomRenderer(
+      citations,
+      onCitationPress,
+      citationBubbleColor,
+      fontSize
+    );
+
+    const elements = useMarkdown(processedContent, {
+      renderer: renderer,
       styles: {
         // Basic text styles
         text: {
           ...baseTextStyle,
         },
 
-        // Headings with safe properties
+        // Headings
         h1: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize + 8, 18),
@@ -184,7 +182,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           overflow: "hidden",
         },
 
-        // Inline code with safe properties
+        // Inline code
         codespan: {
           ...baseTextStyle,
           fontSize: Math.max(fontSize - 1, 11),
@@ -198,12 +196,13 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
         // Code blocks
         code: {
-          ...baseTextStyle,
           backgroundColor: "rgba(0,0,0,0.1)",
           padding: 8,
           borderRadius: 6,
-          marginVertical: 4,
-          overflow: "hidden",
+          marginVertical: 0,
+          height: "auto",
+          minHeight: 0,
+          maxHeight: undefined,
         },
 
         // List items
@@ -222,14 +221,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           marginVertical: 0,
         },
 
-        // Links
-        link: {
-          ...baseTextStyle,
-          color: "#007AFF",
-          textDecorationLine: "underline",
-          overflow: "hidden",
-        },
-
         // Blockquotes
         blockquote: {
           ...baseTextStyle,
@@ -244,16 +235,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     });
 
     if (elements && elements.length > 0) {
-      // Cast elements to ReactElement[] to ensure type safety
-      const safeElements = elements.map((element) =>
+      const safeElements = elements.map((element, index) =>
         React.isValidElement(element) ? (
           element
         ) : (
-          <Text style={baseTextStyle}>{element}</Text>
+          <Text key={`text-${index}`} style={baseTextStyle}>
+            {element}
+          </Text>
         )
       );
 
-      // Go back to using View-based rendering but with better styling
       return (
         <View
           style={{
@@ -268,10 +259,11 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             <View
               key={`markdown-${index}`}
               style={{
-                marginTop: index > 0 ? 14 : 0,
+                marginTop: 14,
                 paddingTop: 0,
                 marginBottom: 0,
                 paddingBottom: 0,
+                width: "90%",
               }}
             >
               {element}
@@ -281,11 +273,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       );
     }
   } catch (error) {
-    // Fallback to plain text if markdown rendering fails
     console.warn("MarkdownRenderer error:", error);
   }
 
-  // Final fallback
   return <Text style={[style, { fontSize: fontSize }]}>{content}</Text>;
 };
 
